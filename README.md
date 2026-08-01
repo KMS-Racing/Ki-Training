@@ -19,6 +19,15 @@ Drei Labyrinthe: **leicht / mittel / schwer**.
 
 ➡️ Einfach `ki-ausbruch/index.html` im Browser öffnen und „Wettkampf starten“.
 
+## 🚗 KI-Autofahren (`autofahren/`)
+Dieselben drei Methoden lernen jetzt **Autofahren**: Sie müssen eine
+Rundstrecke fahren und dabei die **Kontrollpunkte 1→2→3→4** der Reihe nach
+abfahren. Das Auto kann nur lenken (links/geradeaus/rechts); ins Gras fahren =
+**Crash**, Versuch vorbei. Keine KI kennt die Strecke – sie lernen nur durchs
+Fahren, Crashen und Belohnungen. Auch hier: Rangliste, Lernkurve und
+anklickbare Detail-Statistiken pro Methode.
+
+➡️ Einfach `autofahren/index.html` im Browser öffnen.
+
 ## Geplant
-- 🚗 **Autofahren** – eine KI lernt, auf einer Strecke zu bleiben
 - 🧩 **Coding-Level** – kommt noch

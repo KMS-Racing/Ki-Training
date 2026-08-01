@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KI-Autofahren – Lern-Wettkampf</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+      font-family: 'Courier New', monospace; background: #0d0d0d; color: #e0e0e0; padding: 2rem 1rem; }
+    h1 { font-size: 1.3rem; letter-spacing: 0.3em; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; text-align: center; }
+    #untertitel { font-size: 0.8rem; color: #666; margin-bottom: 1.2rem; letter-spacing: 0.05em; text-align: center; max-width: 660px; line-height: 1.5; }
+
+    .zeile-mitte { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; align-items: center; margin-bottom: 1rem; }
+    button { padding: 0.5rem 1.2rem; border: 1px solid #444; background: transparent; color: #ccc;
+      font-family: 'Courier New', monospace; font-size: 0.78rem; letter-spacing: 0.12em; cursor: pointer;
+      text-transform: uppercase; transition: border-color 0.2s, color 0.2s, background 0.2s; }
+    button:hover:not(:disabled) { border-color: #888; color: #fff; }
+
+    canvas#strecke { background: #0a1a0a; border: 1px solid #333; border-radius: 4px; max-width: 100%; }
+
+    .haupt { display: flex; gap: 1.3rem; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+    #rechts { width: 270px; display: flex; flex-direction: column; gap: 0.8rem; }
+
+    .karte { border: 1px solid #333; border-radius: 6px; padding: 0.6rem 0.8rem; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+    .karte:hover { background: #ffffff08; }
+    .karte.fokus { background: #ffffff12; }
+    .karte .kopf { display: flex; justify-content: space-between; align-items: center; }
+    .karte .name { font-size: 0.82rem; font-weight: bold; }
+    .karte .rang { font-size: 0.95rem; }
+    .karte .grund { display: flex; justify-content: space-between; font-size: 0.75rem; color: #888; margin-top: 0.35rem; }
+    .karte .grund b { color: #ddd; }
+
+    .box { border: 1px solid #333; border-radius: 6px; padding: 0.8rem 0.9rem; }
+    .box h2 { font-size: 0.72rem; letter-spacing: 0.1em; color: #888; margin-bottom: 0.55rem; text-transform: uppercase; }
+    #detail-text { font-size: 0.78rem; line-height: 1.7; }
+    #detail-text .z { display: flex; justify-content: space-between; }
+    #detail-text .z span:first-child { color: #666; }
+    #detail-text .beschr { color: #888; margin-top: 0.5rem; font-style: italic; line-height: 1.5; }
+
+    .balken-bg { background: #222; border-radius: 3px; height: 7px; width: 100%; margin: 3px 0 6px; overflow: hidden; }
+    .balken-fg { height: 100%; width: 0%; }
+
+    canvas#kurve { background: #111; border: 1px solid #2a2a2a; border-radius: 4px; display: block; margin-top: 0.5rem; width: 100%; }
+    .kurve-legende { font-size: 0.62rem; color: #555; margin-top: 0.3rem; }
+
+    input[type=range] { accent-color: #888; }
+    label.regler { font-size: 0.74rem; color: #888; display: flex; align-items: center; gap: 0.5rem; }
+    #nachricht { margin-top: 1.3rem; font-size: 0.9rem; color: #aaa; min-height: 1.4em; text-align: center; max-width: 660px; line-height: 1.6; }
+    .badge { color: #28c840; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>KI-Autofahren</h1>
+  <div id="untertitel">Drei Lern-Methoden lernen <b>gegeneinander</b>, die Strecke zu fahren. Keine kennt die Strecke &mdash; sie lernen nur durchs Fahren, Crashen und Belohnungen. Sie müssen die <b>Kontrollpunkte 1&rarr;2&rarr;3&rarr;4</b> der Reihe nach abfahren (im Kreis drehen bringt nichts). Klick eine Methode für Details.</div>
+
+  <div class="haupt">
+    <canvas id="strecke"></canvas>
+    <div id="rechts">
+      <div id="karten"></div>
+      <div class="box">
+        <h2 id="detail-titel">Überblick</h2>
+        <div id="detail-text"></div>
+        <canvas id="kurve" width="248" height="80"></canvas>
+        <div class="kurve-legende" id="kurve-legende"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="zeile-mitte" style="margin-top:1.2rem;">
+    <button id="btn-lernen">&#9654; Wettkampf starten</button>
+    <button id="btn-vergessen">&#8635; Alles vergessen</button>
+    <label class="regler">Tempo <input type="range" id="sl-tempo" min="1" max="80" value="20" /></label>
+  </div>
+
+  <div id="nachricht">Drück „Wettkampf starten“ und schau den KIs beim Fahrenlernen zu.</div>
+
+  <script>
+  /* =========================================================================
+     KI-AUTOFAHREN – LERN-WETTKAMPF (mit Kontrollpunkten)
+     -------------------------------------------------------------------------
+     Drei Lern-Methoden lernen gleichzeitig, eine Rundstrecke zu fahren.
+     Das Auto kann nur LENKEN (links / geradeaus / rechts) und fährt dann ein
+     Feld vor. Es muss die Kontrollpunkte 1->2->3->4 der Reihe nach abfahren.
+       Kontrollpunkt erreicht ->  +20 Belohnung
+       normaler Schritt        ->  -0.1 (leichte Eile, gegen Trödeln/Kreiseln)
+       ins Gras                -> -10 CRASH (Versuch vorbei, zurück zum Start)
+     Keine KI kennt die Strecke. Q-Learning / SARSA / Monte-Carlo.
+     ========================================================================= */
+
+  const STRECKE = [
+    [0,0,0,0,0,0,0,0,0,0],
+    [0,1,1,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,1,1,0],
+    [0,1,1,0,0,0,0,1,1,0],
+    [0,1,1,0,0,0,0,1,1,0],
+    [0,1,1,1,1,1,1,1,1,0],
+    [0,1,1,1,1,1,1,1,1,0],
+    [0,0,0,0,0,0,0,0,0,0],
+  ];
+  const R = STRECKE.length, C = STRECKE[0].length, ZELLE = 40;
+  const START = { r: 1, c: 1, h: 1 };
+  const V = [ { r: -1, c: 0 }, { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 0, c: -1 } ];
+
+  // 4 Kontrollpunkt-Tore (je beide Spuren), in Fahrtreihenfolge.
+  const GATES = [
+    [[1,4],[2,4]],  // 1 oben
+    [[3,7],[3,8]],  // 2 rechts
+    [[5,4],[6,4]],  // 3 unten
+    [[3,1],[3,2]],  // 4 links
+  ];
+  const NG = GATES.length;
+  const ZIELRUNDEN = 3;         // so viele Runden = "kann fahren"
+  const CAP = 200;             // max. Schritte pro Versuch
+  const imGate = (r, c, g) => GATES[g].some(x => x[0] === r && x[1] === c);
+
+  const METHODEN = [
+    { id: 'q',     name: 'Q-Learning',  farbe: '#bc7cff', ox:  0, oy: -1, alpha: 0.3, gamma: 0.97, decay: 400,
+      beschr: 'Lernt nach jedem Schritt und rechnet mit der besten möglichen Zukunft (mutig).' },
+    { id: 'sarsa', name: 'SARSA',       farbe: '#58a6ff', ox: -1, oy:  1, alpha: 0.3, gamma: 0.97, decay: 400,
+      beschr: 'Lernt nach jedem Schritt mit der Lenkung, die es wirklich nimmt – etwas vorsichtiger.' },
+    { id: 'mc',    name: 'Monte-Carlo', farbe: '#ff9f0a', ox:  1, oy:  1, alpha: 0.1, gamma: 0.99, decay: 700,
+      beschr: 'Lernt erst nach dem Crash (am Ende der Runde) aus der ganzen Fahrt. Braucht mehr Übung.' },
+  ];
+
+  let fokus = null, laeuft = false, taktGeber = null, daten = {};
+  const canvas = document.getElementById('strecke'), ctx = canvas.getContext('2d');
+  const kurveCanvas = document.getElementById('kurve'), kctx = kurveCanvas.getContext('2d');
+  const el = id => document.getElementById(id);
+  canvas.width = C * ZELLE; canvas.height = R * ZELLE;
+
+  const asphalt = (r, c) => r >= 0 && r < R && c >= 0 && c < C && STRECKE[r][c] === 1;
+  const key = (r, c, h, cp) => r + ',' + c + ',' + h + ',' + cp;
+  const best = q => q.indexOf(Math.max(...q));
+  const rndA = () => Math.random() * 3 | 0;
+  const neugier = (st, m) => Math.max(0.05, 1 - st.episode / m.decay);
+
+  function fahr(r, c, h, a) {
+    const nh = a === 0 ? (h + 3) % 4 : a === 1 ? h : (h + 1) % 4;
+    const nr = r + V[nh].r, nc = c + V[nh].c;
+    if (!asphalt(nr, nc)) return { crash: true };
+    return { crash: false, r: nr, c: nc, h: nh };
+  }
+  function holeQ(Q, r, c, h, cp) { const k = key(r, c, h, cp); if (!Q[k]) Q[k] = [0, 0, 0]; return Q[k]; }
+
+  // Wie viele Runden schafft die GELERNTE KI (ohne Neugier)?
+  function greedyLauf(Q) {
+    let r = START.r, c = START.c, h = START.h, cp = 0, cps = 0, n = 0; const pfad = [{ r, c }];
+    while (n < CAP * 2 && cps < (ZIELRUNDEN + 1) * NG) {
+      const q = Q[key(r, c, h, cp)]; if (!q) break;
+      const res = fahr(r, c, h, best(q)); if (res.crash) break;
+      r = res.r; c = res.c; h = res.h; n++; pfad.push({ r, c });
+      if (imGate(r, c, cp)) { cp = (cp + 1) % NG; cps++; }
+    }
+    return { laps: cps / NG, pfad };
+  }
+
+  /* ---- Zeichnen ---- */
+  function maleAuto(r, c, h, farbe, ox, oy, alpha) {
+    const cx = c * ZELLE + ZELLE / 2 + ox * (ZELLE / 5), cy = r * ZELLE + ZELLE / 2 + oy * (ZELLE / 5);
+    const fx = V[h].c, fy = V[h].r, px = -fy, py = fx, s = ZELLE * 0.3;
+    ctx.globalAlpha = alpha; ctx.fillStyle = farbe; ctx.beginPath();
+    ctx.moveTo(cx + fx * s, cy + fy * s);
+    ctx.lineTo(cx - fx * s * 0.7 + px * s * 0.65, cy - fy * s * 0.7 + py * s * 0.65);
+    ctx.lineTo(cx - fx * s * 0.7 - px * s * 0.65, cy - fy * s * 0.7 - py * s * 0.65);
+    ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+  }
+
+  function allesZeichnen() {
+    for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+      ctx.fillStyle = asphalt(r, c) ? '#333' : '#0a1a0a';
+      ctx.fillRect(c * ZELLE, r * ZELLE, ZELLE, ZELLE);
+      if (asphalt(r, c)) { ctx.strokeStyle = '#222'; ctx.strokeRect(c * ZELLE + 0.5, r * ZELLE + 0.5, ZELLE - 1, ZELLE - 1); }
+    }
+    // Kontrollpunkte mit Nummern
+    for (let g = 0; g < NG; g++) for (const cell of GATES[g]) {
+      ctx.fillStyle = '#ffffff14'; ctx.fillRect(cell[1] * ZELLE, cell[0] * ZELLE, ZELLE, ZELLE);
+      ctx.fillStyle = '#ffffff55'; ctx.font = 'bold 12px Courier New'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(g + 1, cell[1] * ZELLE + ZELLE / 2, cell[0] * ZELLE + ZELLE / 2);
+    }
+    // Start/Ziel-Linie
+    ctx.fillStyle = '#ffd23f'; ctx.fillRect(START.c * ZELLE + 1, START.r * ZELLE + 2, 4, ZELLE - 4);
+
+    // Fokus: gelernte Ideallinie + nächstes Ziel-Tor hervorheben
+    if (fokus) {
+      const m = METHODEN.find(x => x.id === fokus), st = daten[fokus];
+      if (st.besterPfad) { ctx.fillStyle = m.farbe; ctx.globalAlpha = 0.15;
+        for (const p of st.besterPfad) ctx.fillRect(p.c * ZELLE + 12, p.r * ZELLE + 12, ZELLE - 24, ZELLE - 24); ctx.globalAlpha = 1; }
+      if (st.agent) for (const cell of GATES[st.agent.cp]) {
+        ctx.strokeStyle = m.farbe; ctx.lineWidth = 2; ctx.strokeRect(cell[1] * ZELLE + 2, cell[0] * ZELLE + 2, ZELLE - 4, ZELLE - 4); }
+    }
+
+    for (const m of METHODEN) {
+      const st = daten[m.id]; if (!st.agent) continue;
+      maleAuto(st.agent.r, st.agent.c, st.agent.h, m.farbe, m.ox, m.oy, (fokus && fokus !== m.id) ? 0.35 : 1);
+    }
+  }
+
+  /* ---- Lern-Motor ---- */
+  function neuerVersuch(st, m) {
+    st.agent = { r: START.r, c: START.c, h: START.h, cp: 0, cps: 0, dist: 0, verlauf: [], aktion: null };
+    if (m.id === 'sarsa') { const eps = neugier(st, m);
+      st.agent.aktion = (Math.random() < eps) ? rndA() : best(holeQ(st.Q, START.r, START.c, START.h, 0)); }
+  }
+
+  function macheSchritt(st, m) {
+    const ag = st.agent, eps = neugier(st, m);
+    const q = holeQ(st.Q, ag.r, ag.c, ag.h, ag.cp);
+    const a = (m.id === 'sarsa') ? ag.aktion : ((Math.random() < eps) ? rndA() : best(q));
+    const res = fahr(ag.r, ag.c, ag.h, a);
+    let rew, ncp = ag.cp, tor = false;
+    if (res.crash) rew = -10;
+    else { rew = -0.1; if (imGate(res.r, res.c, ag.cp)) { rew = 20; ncp = (ag.cp + 1) % NG; tor = true; } }
+
+    if (m.id === 'q') {
+      const qn = res.crash ? [0, 0, 0] : holeQ(st.Q, res.r, res.c, res.h, ncp);
+      q[a] += m.alpha * (rew + m.gamma * Math.max(...qn) - q[a]);
+    } else if (m.id === 'sarsa') {
+      if (!res.crash) { const qn = holeQ(st.Q, res.r, res.c, res.h, ncp);
+        const an = (Math.random() < eps) ? rndA() : best(qn);
+        q[a] += m.alpha * (rew + m.gamma * qn[an] - q[a]); ag.aktion = an;
+      } else { q[a] += m.alpha * (rew - q[a]); }
+    } else { ag.verlauf.push({ r: ag.r, c: ag.c, h: ag.h, cp: ag.cp, a, rew }); }
+
+    if (res.crash) { endeEpisode(st, m, true); return; }
+    ag.r = res.r; ag.c = res.c; ag.h = res.h; ag.cp = ncp; ag.dist++;
+    if (tor) ag.cps++;
+    if (ag.dist >= CAP) endeEpisode(st, m, false);
+  }
+
+  function endeEpisode(st, m, gecrasht) {
+    if (m.id === 'mc') { let G = 0; const n = st.agent.verlauf.length;
+      for (let i = n - 1; i >= 0; i--) { const t = st.agent.verlauf[i]; G = t.rew + m.gamma * G;
+        const q = holeQ(st.Q, t.r, t.c, t.h, t.cp); q[t.a] += m.alpha * (G - q[t.a]); } }
+    st.episode++;
+    if (gecrasht) st.crashes++;
+    const gl = greedyLauf(st.Q);
+    st.kurve.push(gl.laps); if (st.kurve.length > 60) st.kurve.shift();
+    if (st.bester === null || gl.laps > st.bester) { st.bester = gl.laps; st.besterPfad = gl.pfad; }
+    neuerVersuch(st, m);
+  }
+
+  const hatGelernt = st => st.bester !== null && st.bester >= ZIELRUNDEN;
+
+  /* ---- Anzeige ---- */
+  function rangliste() {
+    return METHODEN.map(m => ({ m, bester: daten[m.id].bester }))
+      .sort((a, b) => (b.bester === null ? -1 : b.bester) - (a.bester === null ? -1 : a.bester));
+  }
+  function baueKarten() {
+    el('karten').innerHTML = '';
+    for (const m of METHODEN) {
+      const d = document.createElement('div'); d.className = 'karte'; d.dataset.id = m.id;
+      d.innerHTML = '<div class="kopf"><span class="name" style="color:' + m.farbe + '">▲ ' + m.name + '</span><span class="rang" id="rang-' + m.id + '"></span></div>' +
+        '<div class="grund"><span>Beste Fahrt: <b id="best-' + m.id + '">–</b></span><span id="stat-' + m.id + '">übt…</span></div>';
+      d.addEventListener('click', () => { fokus = (fokus === m.id) ? null : m.id; markiere(); zeichneUndZeige(); });
+      el('karten').appendChild(d);
+    }
+  }
+  const markiere = () => document.querySelectorAll('.karte').forEach(k => k.classList.toggle('fokus', k.dataset.id === fokus));
+
+  function aktualisiereKarten() {
+    const rang = rangliste(), med = ['🥇', '🥈', '🥉'];
+    rang.forEach((r, i) => { el('rang-' + r.m.id).textContent = (r.bester && r.bester > 0) ? med[i] : ''; });
+    for (const m of METHODEN) {
+      const st = daten[m.id];
+      el('best-' + m.id).textContent = st.bester === null ? '–' : st.bester.toFixed(1) + ' Rd.';
+      el('stat-' + m.id).innerHTML = hatGelernt(st) ? '<span class="badge">✓ fährt sauber</span>' : (st.bester ? 'lernt…' : 'übt…');
+    }
+  }
+  function aktualisiereDetail() {
+    if (!fokus) {
+      el('detail-titel').textContent = 'Überblick';
+      const f = rangliste()[0];
+      el('detail-text').innerHTML =
+        '<div class="z"><span>Strecke</span><span>Rundkurs, ' + NG + ' Kontrollpunkte</span></div>' +
+        '<div class="z"><span>Ziel</span><span>' + ZIELRUNDEN + ' Runden sauber</span></div>' +
+        '<div class="z"><span>Führt gerade</span><span>' + (f.bester ? f.m.name : '–') + '</span></div>' +
+        '<div class="beschr">Höhe der Linien = wie viele Runden die gelernte KI schafft. Klick eine Methode für Details.</div>';
+      el('kurve-legende').innerHTML = METHODEN.map(m => '<span style="color:' + m.farbe + '">▬</span> ' + m.name).join(' &nbsp; ');
+    } else {
+      const m = METHODEN.find(x => x.id === fokus), st = daten[fokus], eps = Math.round(neugier(st, m) * 100);
+      el('detail-titel').innerHTML = '<span style="color:' + m.farbe + '">' + m.name + '</span> — Details';
+      el('detail-text').innerHTML =
+        '<div class="z"><span>Versuche</span><span><b>' + st.episode + '</b></span></div>' +
+        '<div class="z"><span>Runden jetzt</span><span>' + (st.agent ? (st.agent.cps / NG).toFixed(1) : '0') + '</span></div>' +
+        '<div class="z"><span>Beste Fahrt</span><span>' + (st.bester === null ? '–' : st.bester.toFixed(1) + ' Runden') + '</span></div>' +
+        '<div class="z"><span>Crashes</span><span>' + st.crashes + '</span></div>' +
+        '<div class="z"><span>Neugier</span><span>' + eps + '%</span></div>' +
+        '<div class="balken-bg"><div class="balken-fg" style="width:' + eps + '%;background:' + m.farbe + '"></div></div>' +
+        '<div class="beschr">' + m.beschr + '</div>';
+      el('kurve-legende').innerHTML = 'Balken = gefahrene Runden pro Versuch (voll/gold = ' + ZIELRUNDEN + ' Runden geschafft).';
+    }
+  }
+  function zeichneKurve() {
+    const W = kurveCanvas.width, H = kurveCanvas.height; kctx.clearRect(0, 0, W, H);
+    const skala = ZIELRUNDEN;
+    if (!fokus) {
+      for (const m of METHODEN) {
+        const k = daten[m.id].kurve; if (k.length < 2) continue;
+        kctx.strokeStyle = m.farbe; kctx.lineWidth = 1.5; kctx.beginPath();
+        for (let i = 0; i < k.length; i++) { const x = (i / (k.length - 1)) * W, y = H - Math.min(k[i], skala) / skala * (H - 3) - 1; i === 0 ? kctx.moveTo(x, y) : kctx.lineTo(x, y); }
+        kctx.stroke();
+      }
+    } else {
+      const k = daten[fokus].kurve; if (!k.length) return;
+      const bw = W / Math.max(k.length, 20), farbe = METHODEN.find(x => x.id === fokus).farbe;
+      for (let i = 0; i < k.length; i++) {
+        const h = Math.max(2, Math.min(k[i], skala) / skala * (H - 4));
+        kctx.fillStyle = k[i] >= skala ? '#ffd23f' : farbe;
+        kctx.fillRect(i * bw, H - h, Math.max(1, bw - 1), h);
+      }
+    }
+  }
+  function nachricht() {
+    const fertig = METHODEN.filter(m => hatGelernt(daten[m.id]));
+    if (fertig.length === METHODEN.length) {
+      const r = rangliste();
+      el('nachricht').innerHTML = '<span class="badge">✓ Alle fahren sauber!</span> Am weitesten kam <b style="color:' +
+        r[0].m.farbe + '">' + r[0].m.name + '</b>. Alle drei haben es nur durchs Crashen und Belohnungen gelernt – ohne die Strecke zu kennen. 🏁';
+    } else if (laeuft) el('nachricht').textContent = 'Die drei üben gleichzeitig… wer fährt zuerst saubere Runden?';
+  }
+  function zeichneUndZeige() { allesZeichnen(); aktualisiereKarten(); aktualisiereDetail(); zeichneKurve(); nachricht(); }
+
+  /* ---- Takt + Steuerung ---- */
+  function tick() {
+    const proTick = parseInt(el('sl-tempo').value);
+    for (const m of METHODEN) { const st = daten[m.id]; for (let i = 0; i < proTick; i++) macheSchritt(st, m); }
+    zeichneUndZeige();
+  }
+  function starteStopp() {
+    laeuft = !laeuft;
+    el('btn-lernen').innerHTML = laeuft ? '⏸ Pause' : '▶ Wettkampf starten';
+    if (laeuft) taktGeber = setInterval(tick, 40); else { clearInterval(taktGeber); taktGeber = null; }
+  }
+  function reset() {
+    if (laeuft) starteStopp();
+    daten = {};
+    for (const m of METHODEN) { daten[m.id] = { Q: {}, kurve: [], episode: 0, bester: null, besterPfad: null, crashes: 0, agent: null }; neuerVersuch(daten[m.id], m); }
+    el('nachricht').textContent = 'Drück „Wettkampf starten“ und schau den KIs beim Fahrenlernen zu.';
+    zeichneUndZeige();
+  }
+
+  el('btn-lernen').addEventListener('click', starteStopp);
+  el('btn-vergessen').addEventListener('click', reset);
+  baueKarten();
+  reset();
+  </script>
+</body>
+</html>
