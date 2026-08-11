@@ -47,3 +47,12 @@ die KI die Terminals automatisch durchs Ausprobieren/Durchsuchen (z.B. das
 Zahlenschloss durch Hochzählen), und man schaut ihr dabei zu.
 
 ➡️ Einfach `escape-room/index.html` im Browser öffnen.
+
+## 🚪 KI-Labor: Der Ausbruch (`escape-story/`)
+Ein **immersiver Story-Escape-Room** (inspiriert von Escape-Games): Du hackst
+dich durch **drei verbundene Räume**. Statt fertiger Fragen **durchsuchst** du
+jeden Raum per Point-and-Click, sammelst versteckte Hinweise in deinem
+**Notizbuch** (Inventar) und **kombinierst** sie zum Türcode. Die KI **SYSTEM**
+redet mit dir und neckt dich bei falschen Codes. Mit Timer und Hinweis-Funktion.
+
+➡️ Einfach `escape-story/index.html` im Browser öffnen.

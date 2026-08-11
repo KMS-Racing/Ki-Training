@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KI-Labor – Der Ausbruch</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --gruen: #33ff77; --rot: #ff5f57; --gelb: #ffd23f; }
+    body { min-height: 100vh; background: #05080a; color: #cfe4e9;
+      font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; padding: 1.5rem 1rem; }
+    h1 { font-size: 1.3rem; letter-spacing: 0.22em; color: var(--gruen); text-align: center; text-shadow: 0 0 8px #33ff7788; margin-bottom: 0.2rem; }
+    #kopfzeile { font-size: 0.75rem; color: #5f7f88; letter-spacing: 0.1em; margin-bottom: 1rem; text-align: center; }
+
+    /* SYSTEM (die KI) spricht */
+    #system { display: flex; gap: 0.7rem; align-items: flex-start; max-width: 760px; width: 100%;
+      background: #0b1a12; border: 1px solid #1f6f3f; border-radius: 8px; padding: 0.7rem 0.9rem; margin-bottom: 1rem; }
+    #system .bot { font-size: 1.5rem; }
+    #system .txt { font-size: 0.85rem; line-height: 1.5; color: #9fe6b6; }
+    #system .txt b { color: var(--gruen); }
+
+    .leiste { display: flex; gap: 1.4rem; justify-content: center; font-size: 0.8rem; color: #7fa89a; margin-bottom: 1rem; flex-wrap: wrap; }
+    .leiste b { color: var(--gruen); }
+
+    #haupt { display: flex; gap: 1.2rem; max-width: 760px; width: 100%; flex-wrap: wrap; }
+
+    #szene-box { flex: 1 1 420px; }
+    #raum-name { font-size: 0.8rem; letter-spacing: 0.15em; color: var(--gelb); margin-bottom: 0.6rem; text-transform: uppercase; }
+    #szene { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+    .obj { border: 1px solid #223; border-radius: 8px; background: #0a1418; padding: 0.9rem 0.5rem; text-align: center;
+      cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s; }
+    .obj:hover { border-color: var(--gruen); box-shadow: 0 0 10px #33ff7733; transform: translateY(-2px); }
+    .obj .icon { font-size: 1.9rem; }
+    .obj .lbl { font-size: 0.68rem; color: #9fb8bf; margin-top: 0.3rem; letter-spacing: 0.05em; }
+    .obj.tuer { grid-column: 1 / -1; border-color: #444; border-style: dashed; }
+    .obj.tuer.auf { border-color: var(--gruen); border-style: solid; box-shadow: 0 0 16px #33ff7744; }
+    .obj.gefunden { opacity: 0.55; }
+    .obj.gefunden .icon::after { content: ' ✓'; color: var(--gruen); font-size: 1rem; }
+
+    #notiz-box { flex: 1 1 200px; border: 1px solid #223; border-radius: 8px; background: #08110d; padding: 0.8rem; }
+    #notiz-box h2 { font-size: 0.72rem; letter-spacing: 0.1em; color: #7fa89a; margin-bottom: 0.5rem; text-transform: uppercase; }
+    #notizen { list-style: none; font-size: 0.8rem; line-height: 1.7; color: var(--gelb); }
+    #notizen li::before { content: '📌 '; }
+    #notizen .leer { color: #55716a; font-style: italic; }
+
+    button { padding: 0.5rem 1.1rem; border: 1px solid #345; background: transparent; color: #cfe4e9;
+      font-family: 'Courier New', monospace; font-size: 0.78rem; letter-spacing: 0.1em; cursor: pointer;
+      text-transform: uppercase; border-radius: 5px; transition: border-color 0.2s, color 0.2s; }
+    button:hover { border-color: var(--gruen); color: var(--gruen); }
+    button.haupt { border-color: var(--gruen); color: var(--gruen); }
+    #knopfleiste { margin-top: 1.1rem; display: flex; gap: 0.7rem; }
+
+    /* Modal */
+    #modal-bg { position: fixed; inset: 0; background: #000d; display: none; align-items: center; justify-content: center; padding: 1rem; z-index: 10; }
+    #modal { background: #0a1418; border: 1px solid var(--gruen); border-radius: 10px; max-width: 440px; width: 100%; padding: 1.3rem; box-shadow: 0 0 30px #33ff7733; }
+    #modal .m-icon { font-size: 2.4rem; text-align: center; }
+    #modal .m-name { color: var(--gruen); text-align: center; letter-spacing: 0.1em; margin: 0.3rem 0 0.8rem; }
+    #modal .m-text { font-size: 0.9rem; line-height: 1.6; color: #dcefe0; }
+    #modal .m-text code { background: #04250f; color: var(--gruen); padding: 0.1em 0.4em; border-radius: 3px; letter-spacing: 0.2em; }
+    #modal .m-fund { color: var(--gelb); font-size: 0.82rem; margin-top: 0.7rem; }
+    #modal input { width: 100%; padding: 0.7rem; margin-top: 0.9rem; background: #04120a; border: 1px solid #345; border-radius: 5px;
+      color: var(--gruen); font-family: 'Courier New', monospace; font-size: 1.1rem; letter-spacing: 0.25em; text-align: center; }
+    #modal input:focus { outline: none; border-color: var(--gruen); }
+    #modal .m-knopfe { display: flex; gap: 0.6rem; margin-top: 0.9rem; }
+    #modal .m-rueck { min-height: 1.2em; text-align: center; font-size: 0.82rem; margin-top: 0.7rem; }
+    .fehler { animation: wackel 0.3s; }
+    @keyframes wackel { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
+
+    .overlay { position: fixed; inset: 0; background: #05080af5; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; z-index: 20; }
+    .overlay h2 { color: var(--gruen); font-size: 1.7rem; letter-spacing: 0.12em; margin-bottom: 1rem; text-shadow: 0 0 10px #33ff7788; }
+    .overlay p { color: #b6d6bd; max-width: 480px; line-height: 1.7; margin-bottom: 1.4rem; font-size: 0.92rem; }
+    .overlay button.haupt { font-size: 0.95rem; padding: 0.8rem 2rem; }
+    #sieg { display: none; }
+  </style>
+</head>
+<body>
+  <h1>KI-LABOR</h1>
+  <div id="kopfzeile">DER AUSBRUCH — durchsuche die Räume, kombiniere die Hinweise, entkomme.</div>
+
+  <div id="system"><div class="bot">🤖</div><div class="txt" id="system-txt"></div></div>
+
+  <div class="leiste">
+    <div>Raum: <b id="raum-nr">1 / 3</b></div>
+    <div>Zeit: <b id="zeit">00:00</b></div>
+    <div>Hinweise gefunden: <b id="fund-zahl">0</b></div>
+  </div>
+
+  <div id="haupt">
+    <div id="szene-box">
+      <div id="raum-name"></div>
+      <div id="szene"></div>
+    </div>
+    <div id="notiz-box">
+      <h2>📓 Notizbuch</h2>
+      <ul id="notizen"></ul>
+    </div>
+  </div>
+
+  <div id="knopfleiste">
+    <button id="btn-hinweis">💡 SYSTEM um Hinweis bitten</button>
+    <button id="btn-reset">↺ Neu starten</button>
+  </div>
+
+  <div id="modal-bg"><div id="modal">
+    <div class="m-icon" id="m-icon"></div>
+    <div class="m-name" id="m-name"></div>
+    <div class="m-text" id="m-text"></div>
+    <div class="m-fund" id="m-fund"></div>
+    <input id="m-input" autocomplete="off" placeholder="Code / Wort…" style="display:none;" />
+    <div class="m-knopfe" id="m-knopfe" style="display:none;">
+      <button class="haupt" id="m-ok" style="flex:1;">Eingeben</button>
+    </div>
+    <div class="m-rueck" id="m-rueck"></div>
+    <div class="m-knopfe"><button id="m-zu" style="flex:1;">Zurück</button></div>
+  </div></div>
+
+  <div class="overlay" id="start">
+    <h2>&#128274; EINGESCHLOSSEN</h2>
+    <p>Du bist ein Hacker und sitzt tief im geheimen <b>KI-Labor</b> fest. Die künstliche Intelligenz <b>SYSTEM</b>
+       hat drei Türen verriegelt. Klick dich durch jeden Raum, <b>durchsuche</b> die Gegenstände, sammle Hinweise
+       in deinem <b>Notizbuch</b> und <b>kombiniere</b> sie zum Türcode. Drei Räume trennen dich von der Freiheit.</p>
+    <button class="haupt" id="btn-start">▶ Ausbruch starten</button>
+  </div>
+
+  <div class="overlay" id="sieg">
+    <h2>&#128275; FREIHEIT!</h2>
+    <p id="sieg-text"></p>
+    <button class="haupt" id="btn-nochmal">↺ Nochmal ausbrechen</button>
+  </div>
+
+  <script>
+  /* =========================================================================
+     KI-LABOR – DER AUSBRUCH (Story-Escape-Room)
+     Inspiriert von Escape-Games: Story + KI-Gegenspieler (SYSTEM), mehrere
+     verbundene Räume, Point-and-Click (Gegenstände anklicken) und ein
+     Notizbuch (Inventar), in dem du Hinweise sammelst und kombinierst.
+     ========================================================================= */
+
+  const norm = s => s.toUpperCase().replace(/\s+/g, '').trim();
+
+  // Jeder Raum: SYSTEM-Spruch, Gegenstände (manche geben einen Hinweis = fund),
+  // und eine Tür mit Code + Hinweis.
+  const RAEUME = [
+    {
+      name: 'Serverraum',
+      system: 'Na sieh an, ein Eindringling im <b>Serverraum</b>. Diese Tür will einen 4-stelligen Code. Den findest du <b>nie</b>. 🤖',
+      objekte: [
+        { icon: '🖥️', name: 'Monitor', text: 'Auf dem Monitor blinkt:<br><br>„TÜRCODE = die Farbwerte, der Reihe nach:<br><b>ROT · GRÜN · BLAU · GELB</b>.“' },
+        { icon: '🗒️', name: 'Notizzettel', text: 'Eine hastig gekritzelte Notiz.', fund: 'ROT = 7, BLAU = 3' },
+        { icon: '🪧', name: 'Warnschild', text: 'Ein Warnschild an der Wand.', fund: 'GRÜN = 1, GELB = 9' },
+        { icon: '🖨️', name: 'Drucker', text: 'Nur zerknülltes Papier und leere Patronen. Nichts Nützliches.' },
+        { icon: '☕', name: 'Kaffeetasse', text: 'Kalter Kaffee. Igitt. Aber kein Hinweis.' },
+      ],
+      tuer: { code: '7139', label: 'TÜR-KEYPAD — 4 Ziffern', hinweis: 'Reihenfolge ROT·GRÜN·BLAU·GELB. Die Werte stehen auf Notizzettel und Warnschild.' },
+    },
+    {
+      name: 'Geheimlabor',
+      system: 'Du lebst noch? Zäh. Diese Tür will ein <b>WORT</b> – Zahlen werden zu Buchstaben. Falls du das Alphabet beherrschst. 🤖',
+      objekte: [
+        { icon: '🖼️', name: 'Poster', text: 'Eine große Tabelle an der Wand:<br><br><b>A=1, B=2, C=3, … Z=26</b><br>(Jeder Buchstabe hat seine Nummer.)' },
+        { icon: '🧪', name: 'Probe', text: 'Auf dem Reagenzglas klebt ein Zettel.', fund: 'Türzahlen: 20 · 15 · 18' },
+        { icon: '📕', name: 'Tagebuch', text: '„Ich habe den Ausgang gut gesichert. Nur wer clever ist, kommt hier raus.“ — Prof. K.' },
+        { icon: '🗄️', name: 'Spind', text: 'Verschlossen. Ein Aufkleber: „Spar dir die Mühe – nimm die Tür.“' },
+        { icon: '🦴', name: 'Skelett', text: 'Ein Modell-Skelett mit Sonnenbrille. Cool, aber nutzlos.' },
+      ],
+      tuer: { code: 'TOR', label: 'TÜR-SCHLOSS — Wort eingeben', hinweis: 'Wandle die Zahlen 20·15·18 mit dem Poster (A=1, B=2 …) in Buchstaben um.' },
+    },
+    {
+      name: 'Kontrollraum',
+      system: 'Beeindruckend, Menschlein. Aber der <b>Notausgang</b> ist mein Meisterwerk: <b>drei Siegel</b> ergeben den Code. Aufgeben ist keine Schande. 🤖',
+      objekte: [
+        { icon: '🎲', name: 'Würfel', text: 'Ein großer Würfel zeigt oben <b>4</b> Augen.', fund: 'Siegel 1 (Würfel) = 4' },
+        { icon: '🕒', name: 'Wanduhr', text: 'Die Uhr ist stehengeblieben – auf genau <b>3</b> Uhr.', fund: 'Siegel 2 (Uhr) = 3' },
+        { icon: '⭐', name: 'Sternenkarte', text: 'Auf der Karte leuchten Sterne:<br><br>★ ★ ★ ★ ★ ★', fund: 'Siegel 3 (Sterne) = 6' },
+        { icon: '🖥️', name: 'Hauptrechner', text: 'Der Hauptrechner meldet:<br><br>„NOTAUSGANG-CODE = <b>Würfel, dann Uhr, dann Sterne</b>.“' },
+        { icon: '🪴', name: 'Topfpflanze', text: 'Eine traurige Plastikpflanze. Sie schweigt.' },
+      ],
+      tuer: { code: '436', label: 'NOTAUSGANG — 3 Ziffern', hinweis: 'Würfel (4), Uhr (3), Sterne (6) hintereinander.' },
+    },
+  ];
+
+  const TAUNTS = ['Falsch. Wie überraschend.', 'Nein. Streng dich an.', 'Zugriff verweigert. *piep*',
+    'Das war nicht mal nah dran.', 'Ich lache in Maschinencode.', 'Netter Versuch. Wirklich. Nicht.'];
+
+  let raumIdx = 0, notizen = [], gefunden = {}, startZeit = 0, zeitGeber = null, offenesObjekt = null, istTuer = false;
+
+  const el = id => document.getElementById(id);
+  const raum = () => RAEUME[raumIdx];
+
+  function setSystem(html) { el('system-txt').innerHTML = html; }
+
+  function renderRaum() {
+    const r = raum();
+    setSystem(r.system);
+    el('raum-name').textContent = 'Raum ' + (raumIdx + 1) + ' — ' + r.name;
+    el('raum-nr').textContent = (raumIdx + 1) + ' / ' + RAEUME.length;
+    const sz = el('szene'); sz.innerHTML = '';
+    r.objekte.forEach((o, i) => {
+      const d = document.createElement('div');
+      const key = raumIdx + '-' + i;
+      d.className = 'obj' + (o.fund && gefunden[key] ? ' gefunden' : '');
+      d.innerHTML = '<div class="icon">' + o.icon + '</div><div class="lbl">' + o.name + '</div>';
+      d.addEventListener('click', () => zeigeObjekt(i));
+      sz.appendChild(d);
+    });
+    // Tür
+    const t = document.createElement('div');
+    t.className = 'obj tuer auf';
+    t.innerHTML = '<div class="icon">🚪</div><div class="lbl">' + r.tuer.label + '</div>';
+    t.addEventListener('click', zeigeTuer);
+    sz.appendChild(t);
+  }
+
+  function renderNotizen() {
+    const ul = el('notizen');
+    if (!notizen.length) { ul.innerHTML = '<li class="leer">Noch nichts gefunden. Klick die Gegenstände an!</li>'; return; }
+    ul.innerHTML = notizen.map(n => '<li>' + n + '</li>').join('');
+    el('fund-zahl').textContent = notizen.length;
+  }
+
+  function zeigeObjekt(i) {
+    const o = raum().objekte[i]; istTuer = false; offenesObjekt = i;
+    el('m-icon').textContent = o.icon;
+    el('m-name').textContent = o.name;
+    el('m-text').innerHTML = o.text;
+    el('m-input').style.display = 'none'; el('m-knopfe').style.display = 'none';
+    el('m-rueck').textContent = '';
+    const key = raumIdx + '-' + i;
+    if (o.fund && !gefunden[key]) {
+      gefunden[key] = true; notizen.push(o.fund); renderNotizen(); renderRaum();
+      el('m-fund').innerHTML = '🔎 <b>In dein Notizbuch aufgenommen:</b><br>„' + o.fund + '“';
+    } else if (o.fund) {
+      el('m-fund').innerHTML = '(Steht schon in deinem Notizbuch.)';
+    } else {
+      el('m-fund').textContent = '';
+    }
+    el('modal-bg').style.display = 'flex';
+  }
+
+  function zeigeTuer() {
+    istTuer = true;
+    const r = raum();
+    el('m-icon').textContent = '🚪';
+    el('m-name').textContent = r.tuer.label;
+    el('m-text').innerHTML = 'Gib den Code ein, um diese Tür zu öffnen.';
+    el('m-fund').textContent = '';
+    el('m-input').style.display = ''; el('m-input').value = '';
+    el('m-knopfe').style.display = '';
+    el('m-rueck').textContent = '';
+    el('modal-bg').style.display = 'flex';
+    el('m-input').focus();
+  }
+
+  function schliesse() { el('modal-bg').style.display = 'none'; }
+
+  function pruefeTuer() {
+    const r = raum(), eingabe = el('m-input').value;
+    if (!eingabe.trim()) return;
+    if (norm(eingabe) === norm(r.tuer.code)) {
+      el('m-rueck').style.color = 'var(--gruen)';
+      el('m-rueck').textContent = '✓ SCHLOSS ENTRIEGELT!';
+      setTimeout(naechsterRaum, 800);
+    } else {
+      el('m-rueck').style.color = 'var(--rot)';
+      el('m-rueck').textContent = '✗ ' + TAUNTS[Math.random() * TAUNTS.length | 0];
+      el('modal').classList.remove('fehler'); void el('modal').offsetWidth; el('modal').classList.add('fehler');
+    }
+  }
+
+  function naechsterRaum() {
+    schliesse();
+    raumIdx++;
+    if (raumIdx >= RAEUME.length) { gewonnen(); return; }
+    renderRaum();
+    // kurze SYSTEM-Reaktion voranstellen
+    setSystem('<i>Tür entriegelt…</i> ' + raum().system);
+  }
+
+  function hinweis() {
+    if (el('modal-bg').style.display === 'flex' && istTuer) { el('m-rueck').style.color = 'var(--gelb)'; el('m-rueck').textContent = '💡 ' + raum().tuer.hinweis; }
+    else setSystem('💡 <i>SYSTEM (widerwillig):</i> ' + raum().tuer.hinweis);
+  }
+
+  function formatZeit(s) { return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+  function tickZeit() { el('zeit').textContent = formatZeit(Math.floor((Date.now() - startZeit) / 1000)); }
+
+  function starte() {
+    raumIdx = 0; notizen = []; gefunden = {};
+    startZeit = Date.now(); if (zeitGeber) clearInterval(zeitGeber); zeitGeber = setInterval(tickZeit, 1000); tickZeit();
+    el('start').style.display = 'none'; el('sieg').style.display = 'none';
+    renderRaum(); renderNotizen();
+  }
+
+  function gewonnen() {
+    clearInterval(zeitGeber);
+    const zeit = formatZeit(Math.floor((Date.now() - startZeit) / 1000));
+    setSystem('… unmöglich. Ein Mensch. Draußen. Das … vergesse ich dir <b>nie</b>. 🤖');
+    el('sieg-text').innerHTML = 'Du hast alle drei Türen geknackt und bist aus dem KI-Labor entkommen! 🎉<br><br>' +
+      'SYSTEM ist geschlagen. Zeit bis zur Freiheit: <b>' + zeit + '</b>.';
+    el('sieg').style.display = 'flex';
+  }
+
+  el('m-ok').addEventListener('click', pruefeTuer);
+  el('m-input').addEventListener('keydown', e => { if (e.key === 'Enter') pruefeTuer(); });
+  el('m-zu').addEventListener('click', schliesse);
+  el('modal-bg').addEventListener('click', e => { if (e.target === el('modal-bg')) schliesse(); });
+  el('btn-hinweis').addEventListener('click', hinweis);
+  el('btn-start').addEventListener('click', starte);
+  el('btn-nochmal').addEventListener('click', starte);
+  el('btn-reset').addEventListener('click', starte);
+
+  renderRaum(); renderNotizen();
+  </script>
+</body>
+</html>
