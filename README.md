@@ -36,8 +36,12 @@ Terminals mit je einem anderen Rätsel – **Muster fortsetzen, Geheimschrift
 knacken, Zahlencode aus Hinweisen, Logik-Rätsel**. Alle geknackt → der
 Notausgang öffnet sich. Mit Timer, Hinweisen und „Zugriff verweigert“.
 
+Drei Schwierigkeitsgrade: **Leicht (3 Rätsel) / Mittel (4) / Schwer (5)** –
+schwerere Stufen haben mehr und kniffligere Rätsel (Primzahlen, Caesar +4,
+Mathe-Code, Zahlen-Geheimschrift A=1…).
+
 Zwei Modi: **🧑 Selbst spielen** oder **🤖 KI zuschauen** – im KI-Modus knackt
 die KI die Terminals automatisch durchs Ausprobieren/Durchsuchen (z.B. das
-Zahlenschloss über 4000-mal), und man schaut ihr dabei zu.
+Zahlenschloss durch Hochzählen), und man schaut ihr dabei zu.
 
 ➡️ Einfach `escape-room/index.html` im Browser öffnen.
