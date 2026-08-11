@@ -29,5 +29,11 @@ anklickbare Detail-Statistiken pro Methode.
 
 ➡️ Einfach `autofahren/index.html` im Browser öffnen.
 
-## Geplant
-- 🧩 **Coding-Level** – kommt noch
+## 🔐 KI-Labor Escape Room (`escape-room/`)
+Kein Lern-Projekt, sondern ein **Rätsel-Spiel für Menschen**: Du bist im
+geheimen KI-Labor eingesperrt und musst dich raushacken. Vier Sicherheits-
+Terminals mit je einem anderen Rätsel – **Muster fortsetzen, Geheimschrift
+knacken, Zahlencode aus Hinweisen, Logik-Rätsel**. Alle geknackt → der
+Notausgang öffnet sich. Mit Timer, Hinweisen und „Zugriff verweigert“.
+
+➡️ Einfach `escape-room/index.html` im Browser öffnen.
