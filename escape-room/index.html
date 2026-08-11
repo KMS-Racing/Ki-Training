@@ -6,7 +6,7 @@
   <title>KI-Labor – Ausbruch</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    :root { --gruen: #33ff77; --rot: #ff5f57; --dim: #0f2a15; }
+    :root { --gruen: #33ff77; --rot: #ff5f57; }
     body {
       min-height: 100vh; background: #050a06; color: #cfe9d4;
       font-family: 'Courier New', monospace; display: flex; flex-direction: column;
@@ -20,17 +20,18 @@
       font-size: 0.82rem; color: #8fb89a; flex-wrap: wrap; }
     .leiste b { color: var(--gruen); }
 
-    #gitter { display: grid; grid-template-columns: repeat(2, 220px); gap: 1rem; margin-bottom: 1.4rem; }
-    @media (max-width: 520px){ #gitter { grid-template-columns: 1fr; } }
+    #gitter { display: grid; grid-template-columns: repeat(3, 180px); gap: 0.7rem; margin-bottom: 1.4rem; }
+    @media (max-width: 620px){ #gitter { grid-template-columns: repeat(2, 160px); } }
+    @media (max-width: 380px){ #gitter { grid-template-columns: 1fr; } }
 
     .terminal {
-      border: 1px solid #234; border-radius: 8px; padding: 1rem; background: #0a140d;
-      cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; position: relative;
+      border: 1px solid #234; border-radius: 8px; padding: 0.7rem 0.8rem; background: #0a140d;
+      cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
     }
-    .terminal:hover { border-color: var(--gruen); box-shadow: 0 0 12px #33ff7733; }
-    .terminal .nr { font-size: 0.66rem; color: #5f7f68; letter-spacing: 0.12em; }
-    .terminal .name { font-size: 0.92rem; margin: 0.3rem 0; color: #cfe9d4; }
-    .terminal .schloss { font-size: 1.5rem; }
+    .terminal:hover { border-color: var(--gruen); box-shadow: 0 0 10px #33ff7733; }
+    .terminal .nr { font-size: 0.6rem; color: #5f7f68; letter-spacing: 0.1em; }
+    .terminal .name { font-size: 0.8rem; margin: 0.25rem 0; color: #cfe9d4; }
+    .terminal .schloss { font-size: 1.2rem; }
     .terminal.auf { border-color: var(--gruen); background: #0c1f12; }
     .terminal.auf .name { color: var(--gruen); }
     .terminal.arbeitet { border-color: #ff9f0a; box-shadow: 0 0 14px #ff9f0a55; }
@@ -47,7 +48,7 @@
       padding: 1.4rem; box-shadow: 0 0 30px #33ff7733; }
     #modal .kopf { color: var(--gruen); letter-spacing: 0.12em; font-size: 0.95rem; margin-bottom: 0.9rem; }
     #modal .frage { font-size: 0.92rem; line-height: 1.6; margin-bottom: 1rem; color: #dcefe0; }
-    #modal .frage code { background: #04250f; color: var(--gruen); padding: 0.1em 0.4em; border-radius: 3px; letter-spacing: 0.2em; }
+    #modal .frage code { background: #04250f; color: var(--gruen); padding: 0.1em 0.4em; border-radius: 3px; letter-spacing: 0.15em; }
     #modal .frage ul { margin: 0.5rem 0 0 1.1rem; }
     #modal .frage li { margin: 0.25rem 0; }
     #modal input { width: 100%; padding: 0.7rem; background: #04120a; border: 1px solid #345; border-radius: 5px;
@@ -113,12 +114,13 @@
   <div class="overlay" id="start">
     <h2>&#128274; EINGESCHLOSSEN</h2>
     <p>Du bist im geheimen KI-Labor eingeschlossen. Knacke alle Sicherheits-Terminals, dann öffnet sich der
-       Notausgang. Wähle eine Schwierigkeit – und ob du selbst spielst oder der KI beim Raushacken zuschaust.</p>
+       Notausgang. Wähle eine Schwierigkeit – und ob du selbst spielst oder der KI beim Raushacken zuschaust.
+       Die Rätsel werden jedes Mal neu gewürfelt!</p>
     <div class="stufe-wahl">
       <span>SCHWIERIGKEIT:</span>
-      <button class="stufe-btn" data-s="leicht">Leicht · 3</button>
-      <button class="stufe-btn" data-s="mittel">Mittel · 4</button>
-      <button class="stufe-btn" data-s="schwer">Schwer · 5</button>
+      <button class="stufe-btn" data-s="leicht">Leicht · 10</button>
+      <button class="stufe-btn" data-s="mittel">Mittel · 20</button>
+      <button class="stufe-btn" data-s="schwer">Schwer · 30</button>
     </div>
     <div class="knopf-reihe">
       <button class="haupt" id="btn-start-mensch">🧑 Selbst spielen</button>
@@ -134,127 +136,177 @@
 
   <script>
   /* =========================================================================
-     KI-LABOR – AUSBRUCH  (Escape Room: 3 Schwierigkeiten, 2 Modi)
-       Stufen: leicht (3 Rätsel) / mittel (4) / schwer (5)
+     KI-LABOR – AUSBRUCH  (Escape Room mit RÄTSEL-GENERATOREN)
+       Stufen: leicht 10 / mittel 20 / schwer 30 Rätsel.
        Modi:   🧑 Mensch (selbst lösen)  /  🤖 KI (knackt automatisch, zuschauen)
-     Die KI-Logs (ki-Feld) werden aus kleinen Helfern gebaut, damit sie zur
-     jeweiligen Lösung passen – ehrlich: Zahlenschloss = durchzählen,
-     Geheimschrift = alle Verschiebungen testen, usw.
+     Die Rätsel werden bei jedem Start frisch erzeugt und die Lösung selbst
+     berechnet – so stimmen die Antworten immer und es ist jedes Mal anders.
      ========================================================================= */
 
   const norm = s => s.toUpperCase().replace(/\s+/g, '').trim();
+  const pick = a => a[Math.random() * a.length | 0];
+  const rint = (a, b) => a + (Math.random() * (b - a + 1) | 0);
+  const shuffle = a => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
+  const shiftWort = (w, s) => [...w].map(ch => String.fromCharCode((ch.charCodeAt(0) - 65 + s) % 26 + 65)).join('');
 
-  // ---- Helfer, die den "KI hackt"-Log passend zur Lösung erzeugen ----
+  // ---- KI-Log-Helfer (bauen den "KI hackt"-Verlauf passend zur Lösung) ----
   function kiCaesar(encoded, shift, antwort) {
-    const clean = encoded.replace(/\s/g, '').toUpperCase(), log = [];
+    const clean = encoded.replace(/\s/g, ''), log = [];
     for (let s = 1; s <= shift; s++) {
       const cand = [...clean].map(ch => String.fromCharCode((ch.charCodeAt(0) - 65 - s + 26) % 26 + 65)).join(' ');
-      log.push('Verschiebung ' + s + ' zurück: ' + cand + (s === shift ? '   … echtes Wort!  ✓' : '   … kein Wort  ✗'));
+      log.push('Verschiebung ' + s + ' zurück: ' + cand + (s === shift ? '   … Wort!  ✓' : '   … nix  ✗'));
     }
-    log.push('>>Passwort geknackt: ' + antwort + '<<');
-    return { delay: 550, versuche: shift, log };
+    log.push('>>Passwort: ' + antwort + '<<');
+    return { delay: 500, versuche: shift, log };
   }
   function kiCode(antwort) {
     const len = antwort.length, n = parseInt(antwort, 10), p = s => String(s).padStart(len, '0');
-    const log = ['Kein Nachdenken – ich probiere einfach ALLE Codes durch:'];
-    const step = Math.max(1, Math.floor(n / 25));
+    const log = ['Ich probiere ALLE Codes durch:'];
+    const step = Math.max(1, Math.floor(n / 22));
     for (let k = 0; k < n; k += step) log.push('Probiere ' + p(k) + ' …  ✗');
     log.push('Probiere ' + p(n) + ' …  ✓');
-    log.push('>>Code geknackt: ' + p(n) + ' (nach ' + (n + 1) + ' Versuchen!)<<');
-    return { delay: 75, versuche: n + 1, log };
+    log.push('>>Code: ' + p(n) + ' (nach ' + (n + 1) + ' Versuchen!)<<');
+    return { delay: 70, versuche: n + 1, log };
   }
   function kiA1Z26(antwort) {
     const nums = [...antwort].map(ch => ch.charCodeAt(0) - 64);
-    return { delay: 600, versuche: 1, log: [
-      'Tabelle: A=1, B=2, C=3, … Z=26',
-      'Setze jede Zahl in ihren Buchstaben um:',
+    return { delay: 550, versuche: 1, log: [
+      'Tabelle: A=1, B=2, … Z=26',
       nums.map((nn, i) => nn + '→' + antwort[i]).join('   '),
-      '>>Entschlüsselt: ' + antwort + '<<' ] };
+      '>>Wort: ' + antwort + '<<' ] };
   }
-  const kiSchritte = (zeilen, versuche = 1, delay = 650) => () => ({ delay, versuche, log: zeilen });
+  const kiText = (zeilen, versuche = 1, delay = 600) => () => ({ delay, versuche, log: zeilen });
 
-  // ---- Die Rätsel je Schwierigkeit ----
-  const STUFEN = {
-    leicht: [
-      { name: 'Sequenz-Scanner', typ: 'MUSTER',
-        frage: 'Welche Zahl kommt als Nächstes?<br><br><code>2 &nbsp; 4 &nbsp; 6 &nbsp; 8 &nbsp; ?</code>',
-        tipps: ['Wie groß ist der Abstand zwischen den Zahlen?', '8 + 2 = ?'],
-        loesung: e => norm(e) === '10', hinweisLoesung: '10 (immer +2)',
-        ki: kiSchritte(['Abstand zwischen den Zahlen: immer +2', '8 + 2 = 10', '>>Nächste Zahl = 10<<'], 2) },
-      { name: 'Chiffre-Modul', typ: 'GEHEIMSCHRIFT',
-        frage: 'Jeder Buchstabe wurde um <b>1 Stelle nach vorne</b> verschoben (A→B). Entschlüssle:<br><br><code>U P S</code>',
-        tipps: ['Gehe pro Buchstabe 1 Schritt zurück.', 'U → T, P → O, S → R'],
-        loesung: e => norm(e) === 'TOR', hinweisLoesung: 'TOR (1 zurück)',
-        ki: () => kiCaesar('UPS', 1, 'TOR') },
-      { name: 'Zahlenschloss', typ: 'ZAHLENCODE',
-        frage: 'Ein 3-stelliger Code. Setze ihn aus den Hinweisen zusammen:<ul>' +
-               '<li>1. Ziffer: Beine einer Katze</li><li>2. Ziffer: Anzahl deiner Augen</li>' +
-               '<li>3. Ziffer: Räder an einem Fahrrad</li></ul>',
-        tipps: ['Katze = 4 Beine, Augen = 2 …', 'Fahrrad hat 2 Räder.'],
-        loesung: e => norm(e) === '422', hinweisLoesung: '422',
-        ki: () => kiCode('422') },
-    ],
-    mittel: [
-      { name: 'Sequenz-Scanner', typ: 'MUSTER',
-        frage: 'Welche Zahl kommt als Nächstes?<br><br><code>1 &nbsp; 1 &nbsp; 2 &nbsp; 3 &nbsp; 5 &nbsp; 8 &nbsp; 13 &nbsp; ?</code>',
-        tipps: ['Schau dir immer zwei Zahlen nebeneinander an.', 'Addiere die zwei davor: 8 + 13 = ?'],
-        loesung: e => norm(e) === '21', hinweisLoesung: '21 (Fibonacci: Summe der zwei davor)',
-        ki: kiSchritte(['Teste „mal 2“: 1×2=2 ✓, aber 2×2=4 ≠ 3  ✗', 'Teste „die zwei davor addieren“: 1+1=2 ✓, 1+2=3 ✓, 2+3=5 ✓  passt!', '>>Nächste Zahl = 8 + 13 = 21<<'], 2) },
-      { name: 'Chiffre-Modul', typ: 'GEHEIMSCHRIFT',
-        frage: 'Jeder Buchstabe wurde um <b>3 Stellen nach vorne</b> verschoben (A→D). Entschlüssle:<br><br><code>K D F N</code>',
-        tipps: ['Gehe pro Buchstabe 3 Schritte zurück.', 'K → J → I → H …'],
-        loesung: e => norm(e) === 'HACK', hinweisLoesung: 'HACK (3 zurück)',
-        ki: () => kiCaesar('KDFN', 3, 'HACK') },
-      { name: 'Zahlenschloss', typ: 'ZAHLENCODE',
-        frage: 'Ein 4-stelliger Code. Setze ihn aus den Hinweisen zusammen:<ul>' +
-               '<li>1. Ziffer: Seiten eines Quadrats</li><li>2. Ziffer: Ecken eines Dreiecks</li>' +
-               '<li>3. Ziffer: die kleinste Primzahl</li><li>4. Ziffer: Finger an einer Hand</li></ul>',
-        tipps: ['Quadrat = 4, Dreieck = 3 …', 'Kleinste Primzahl ist 2 (nicht 1!). Hand = 5.'],
-        loesung: e => norm(e) === '4325', hinweisLoesung: '4325',
-        ki: () => kiCode('4325') },
-      { name: 'Logik-Kern', typ: 'LOGIK',
-        frage: 'Drei Wissenschaftler haben je eine Karte in <b>rot, grün, blau</b> (alle verschieden):<ul>' +
-               '<li>Ben hat <b>blau</b>.</li><li>Anna hat <b>nicht</b> rot.</li></ul>Welche Farbe hat <b>Carla</b>?',
-        tipps: ['Ben hat blau – für Anna bleiben rot oder grün.', 'Anna hat nicht rot → Anna = grün. Was bleibt für Carla?'],
-        loesung: e => norm(e) === 'ROT', hinweisLoesung: 'rot (Ben=blau, Anna=grün → Carla=rot)',
-        ki: kiSchritte(['Gegeben: Ben = blau', 'Anna ≠ rot, blau ist vergeben → Anna = grün', 'Übrig für Carla: rot', '>>Lösung: rot<<']) },
-    ],
-    schwer: [
-      { name: 'Sequenz-Scanner', typ: 'MUSTER',
-        frage: 'Welche Zahl kommt als Nächstes?<br><br><code>2 &nbsp; 3 &nbsp; 5 &nbsp; 7 &nbsp; 11 &nbsp; 13 &nbsp; ?</code>',
-        tipps: ['Durch welche Zahlen sind diese teilbar?', 'Das sind Primzahlen – welche kommt nach 13?'],
-        loesung: e => norm(e) === '17', hinweisLoesung: '17 (Primzahlen)',
-        ki: kiSchritte(['Diese Zahlen sind nur durch 1 und sich selbst teilbar → Primzahlen', 'Nächste Primzahl nach 13: 14?nein, 15?nein, 16?nein, 17?ja', '>>Nächste Zahl = 17<<'], 4) },
-      { name: 'Chiffre-Modul', typ: 'GEHEIMSCHRIFT',
-        frage: 'Jeder Buchstabe wurde um <b>4 Stellen nach vorne</b> verschoben (A→E). Entschlüssle:<br><br><code>R I Y V S R</code>',
-        tipps: ['Gehe pro Buchstabe 4 Schritte zurück.', 'R → N, I → E … (es ist ein KI-Wort)'],
-        loesung: e => norm(e) === 'NEURON', hinweisLoesung: 'NEURON (4 zurück)',
-        ki: () => kiCaesar('RIYVSR', 4, 'NEURON') },
-      { name: 'Zahlenschloss', typ: 'ZAHLENCODE',
-        frage: 'Ein 4-stelliger Code aus Rechnungen:<ul>' +
-               '<li>1. Ziffer: 3 × 3 − 6</li><li>2. Ziffer: die Hälfte von 14</li>' +
-               '<li>3. Ziffer: 2 × 2 × 2</li><li>4. Ziffer: 9 − 3 − 5</li></ul>',
-        tipps: ['3×3=9, 9−6=3 …', 'Hälfte von 14 = 7; 2×2×2 = 8; 9−3−5 = 1'],
-        loesung: e => norm(e) === '3781', hinweisLoesung: '3781',
-        ki: () => kiCode('3781') },
-      { name: 'Daten-Dechiffrierer', typ: 'ZAHLEN-SCHRIFT',
-        frage: 'Buchstaben wurden zu Zahlen: A=1, B=2, … Z=26. Welches Wort ist das?<br><br><code>4 &nbsp; 1 &nbsp; 20 &nbsp; 5 &nbsp; 14</code>',
-        tipps: ['4 = D (der 4. Buchstabe), 1 = A …', 'D-A-T-E-…?'],
-        loesung: e => norm(e) === 'DATEN', hinweisLoesung: 'DATEN (4=D,1=A,20=T,5=E,14=N)',
-        ki: () => kiA1Z26('DATEN') },
-      { name: 'Logik-Kern', typ: 'LOGIK',
-        frage: 'Drei Roboter (Alpha, Beta, Gamma) haben die Nummern <b>1, 2, 3</b> (alle verschieden):<ul>' +
-               '<li>Gamma hat die <b>1</b>.</li><li>Alpha hat eine <b>größere</b> Nummer als Beta.</li></ul>Welche Nummer hat <b>Alpha</b>?',
-        tipps: ['Gamma = 1, also bleiben 2 und 3 für Alpha und Beta.', 'Alpha > Beta → wer hat die 3?'],
-        loesung: e => norm(e) === '3', hinweisLoesung: '3 (Gamma=1, Alpha>Beta → Alpha=3)',
-        ki: kiSchritte(['Gamma = 1 (gegeben)', 'Für Alpha und Beta bleiben 2 und 3', 'Alpha > Beta → Alpha = 3, Beta = 2', '>>Alpha = 3<<']) },
-    ],
-  };
+  // ---- Wort-Listen (nur A–Z, für Geheimschrift) ----
+  const WORTE_KURZ = ['CODE','HACK','CHIP','NETZ','SCAN','BYTE','MAUS','AKKU','TOR','LASER','PIXEL','MODUL','KABEL','MOTOR','RADAR','DATEN','ROBOT','FUNK','LICHT','SPIEL'];
+  const WORTE_LANG = ['ROBOTER','NEURON','SYSTEM','SENSOR','SIGNAL','MONITOR','KAMERA','DROHNE','MATRIX','SERVER','NETZWERK','PROGRAMM','SPEICHER','DISPLAY','ANTENNE','BATTERIE'];
+  const NAMEN = ['Anna','Ben','Carla','David','Eva','Finn','Greta','Hugo','Ida','Jan'];
+  const FARBEN = ['rot','blau','gelb'];
 
+  // ---- Rätsel-Generatoren (jeder liefert {name,typ,frage,tipps,antwort,ki}) ----
+  function genArith(loD, hiD) {
+    const a = rint(1, 9), d = rint(loD, hiD), t = []; for (let i = 0; i < 5; i++) t.push(a + i * d);
+    const next = a + 5 * d;
+    return { name: 'Sequenz-Scanner', typ: 'MUSTER', antwort: '' + next,
+      frage: 'Welche Zahl kommt als Nächstes?<br><br><code>' + t.join(' &nbsp; ') + ' &nbsp; ?</code>',
+      tipps: ['Wie groß ist der Abstand zwischen den Zahlen?', t[4] + ' + ' + d + ' = ?'],
+      ki: kiText(['Abstand immer +' + d, t[4] + ' + ' + d + ' = ' + next, '>>Nächste Zahl = ' + next + '<<'], 2) };
+  }
+  function genGeo() {
+    const a = rint(1, 3), r = rint(2, 3), t = []; let v = a; for (let i = 0; i < 4; i++) { t.push(v); v *= r; }
+    const next = t[3] * r;
+    return { name: 'Sequenz-Scanner', typ: 'MUSTER', antwort: '' + next,
+      frage: 'Welche Zahl kommt als Nächstes?<br><br><code>' + t.join(' &nbsp; ') + ' &nbsp; ?</code>',
+      tipps: ['Womit wird immer multipliziert?', t[3] + ' × ' + r + ' = ?'],
+      ki: kiText(['Jede Zahl × ' + r, t[3] + ' × ' + r + ' = ' + next, '>>Nächste Zahl = ' + next + '<<'], 2) };
+  }
+  function genFib() {
+    const t = [rint(1, 4), rint(2, 5)]; for (let i = 2; i < 6; i++) t.push(t[i - 1] + t[i - 2]);
+    const next = t[5] + t[4];
+    return { name: 'Sequenz-Scanner', typ: 'MUSTER', antwort: '' + next,
+      frage: 'Welche Zahl kommt als Nächstes?<br><br><code>' + t.join(' &nbsp; ') + ' &nbsp; ?</code>',
+      tipps: ['Addiere immer die zwei Zahlen davor.', t[4] + ' + ' + t[5] + ' = ?'],
+      ki: kiText(['Regel: die zwei davor addieren', t[4] + ' + ' + t[5] + ' = ' + next, '>>Nächste Zahl = ' + next + '<<'], 2) };
+  }
+  function genQuad() {
+    const s = rint(1, 3), t = []; for (let i = 0; i < 5; i++) t.push((s + i) * (s + i));
+    const nn = s + 5, next = nn * nn;
+    return { name: 'Sequenz-Scanner', typ: 'MUSTER', antwort: '' + next,
+      frage: 'Welche Zahl kommt als Nächstes?<br><br><code>' + t.join(' &nbsp; ') + ' &nbsp; ?</code>',
+      tipps: ['Das sind Quadratzahlen: 1×1, 2×2, 3×3 …', nn + ' × ' + nn + ' = ?'],
+      ki: kiText(['Quadratzahlen: n×n', nn + ' × ' + nn + ' = ' + next, '>>Nächste Zahl = ' + next + '<<'], 2) };
+  }
+  const PRIMES = [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47];
+  function genPrimes() {
+    const i = rint(0, 7), t = PRIMES.slice(i, i + 6), next = PRIMES[i + 6];
+    return { name: 'Sequenz-Scanner', typ: 'MUSTER', antwort: '' + next,
+      frage: 'Welche Zahl kommt als Nächstes?<br><br><code>' + t.join(' &nbsp; ') + ' &nbsp; ?</code>',
+      tipps: ['Durch welche Zahlen sind diese teilbar? (nur 1 und sich selbst)', 'Das sind Primzahlen – welche kommt nach ' + t[5] + '?'],
+      ki: kiText(['Das sind Primzahlen', 'Nächste Primzahl nach ' + t[5] + ' = ' + next, '>>Nächste Zahl = ' + next + '<<'], 4) };
+  }
+  function genCaesar(lo, hi, worte) {
+    const w = pick(worte), s = rint(lo, hi), enc = shiftWort(w, s);
+    return { name: 'Chiffre-Modul', typ: 'GEHEIMSCHRIFT', antwort: w,
+      frage: 'Jeder Buchstabe wurde um <b>' + s + '</b> nach vorne verschoben (A→' + String.fromCharCode(65 + s) + '). Entschlüssle:<br><br><code>' + enc.split('').join(' ') + '</code>',
+      tipps: ['Gehe pro Buchstabe ' + s + ' Schritt(e) im Alphabet zurück.', 'Erster Buchstabe: ' + enc[0] + ' → ' + w[0] + ' …'],
+      ki: () => kiCaesar(enc, s, w) };
+  }
+  function genA1Z26(worte) {
+    const w = pick(worte), nums = [...w].map(c => c.charCodeAt(0) - 64);
+    return { name: 'Daten-Dechiffrierer', typ: 'ZAHLEN-SCHRIFT', antwort: w,
+      frage: 'Buchstaben als Zahlen (A=1, B=2, … Z=26). Welches Wort?<br><br><code>' + nums.join(' &nbsp; ') + '</code>',
+      tipps: ['Der ' + nums[0] + '. Buchstabe im Alphabet ist ' + w[0] + '.', 'Setze jede Zahl in ihren Buchstaben um.'],
+      ki: () => kiA1Z26(w) };
+  }
+  function genCode(len) {
+    const digits = [], clues = [];
+    for (let k = 0; k < len; k++) {
+      const d = rint(1, 9); let clue;
+      if (d === 1) clue = pick(['3 − 2', '5 − 4', '2 − 1']);
+      else { const typ = rint(0, 2);
+        if (typ === 0) { const a = rint(1, d - 1); clue = a + ' + ' + (d - a); }
+        else if (typ === 1) { const b = rint(1, 4); clue = (d + b) + ' − ' + b; }
+        else { const f = []; for (let x = 2; x <= d; x++) if (d % x === 0) f.push(x); const x = f.length ? pick(f) : 1; clue = x === 1 ? (d + 2) + ' − 2' : x + ' × ' + (d / x); } }
+      digits.push(d); clues.push('<li>' + (k + 1) + '. Ziffer: ' + clue + '</li>');
+    }
+    const code = digits.join('');
+    return { name: 'Zahlenschloss', typ: 'ZAHLENCODE', antwort: code,
+      frage: 'Ein ' + len + '-stelliger Code. Rechne jede Ziffer aus:<ul>' + clues.join('') + '</ul>',
+      tipps: ['Rechne die erste Ziffer aus: ergibt ' + digits[0] + '.', 'Setze alle Ziffern hintereinander.'],
+      ki: () => kiCode(code) };
+  }
+  function genLogikFarbe() {
+    const n = shuffle(NAMEN).slice(0, 3), f = shuffle(FARBEN);
+    return { name: 'Logik-Kern', typ: 'LOGIK', antwort: f[2],
+      frage: 'Drei haben je eine Karte in <b>rot, blau, gelb</b> (alle verschieden):<ul>' +
+             '<li>' + n[0] + ' hat <b>' + f[0] + '</b>.</li>' +
+             '<li>' + n[1] + ' hat <b>nicht</b> ' + f[2] + '.</li></ul>Welche Farbe hat <b>' + n[2] + '</b>?',
+      tipps: [n[0] + ' hat ' + f[0] + ' – das ist weg.', n[1] + ' hat nicht ' + f[2] + ' → ' + n[1] + ' = ' + f[1] + '. Was bleibt für ' + n[2] + '?'],
+      ki: kiText([n[0] + ' = ' + f[0], n[1] + ' ≠ ' + f[2] + ' → ' + n[1] + ' = ' + f[1], 'Übrig: ' + n[2] + ' = ' + f[2], '>>Lösung: ' + f[2] + '<<']) };
+  }
+  function genLogikZahl() {
+    const n = shuffle(NAMEN).slice(0, 3), num = shuffle([1, 2, 3]);
+    const eins = n[num.indexOf(1)], rest = [0, 1, 2].filter(i => num[i] !== 1);
+    const gross = num[rest[0]] > num[rest[1]] ? rest[0] : rest[1], klein = gross === rest[0] ? rest[1] : rest[0];
+    return { name: 'Logik-Kern', typ: 'LOGIK', antwort: '' + num[gross],
+      frage: 'Drei Roboter haben die Nummern <b>1, 2, 3</b> (alle verschieden):<ul>' +
+             '<li>' + eins + ' hat die <b>1</b>.</li>' +
+             '<li>' + n[gross] + ' hat eine <b>größere</b> Nummer als ' + n[klein] + '.</li></ul>Welche Nummer hat <b>' + n[gross] + '</b>?',
+      tipps: [eins + ' = 1, also bleiben 2 und 3.', n[gross] + ' > ' + n[klein] + ' → ' + n[gross] + ' = 3.'],
+      ki: kiText([eins + ' = 1', n[gross] + ' > ' + n[klein] + ' → ' + n[gross] + ' = 3, ' + n[klein] + ' = 2', '>>Lösung: 3<<']) };
+  }
+
+  // ---- Rätsel-Satz für eine Stufe bauen ----
+  const STUFEN_ANZAHL = { leicht: 10, mittel: 20, schwer: 30 };
   const STUFE_NAME = { leicht: 'Leicht', mittel: 'Mittel', schwer: 'Schwer' };
 
+  function baueRaetsel(diff) {
+    let gens;
+    if (diff === 'leicht') gens = [
+      () => genArith(1, 3), () => genFib(), () => genCaesar(1, 2, WORTE_KURZ),
+      () => genA1Z26(WORTE_KURZ), () => genCode(3), () => genLogikFarbe() ];
+    else if (diff === 'mittel') gens = [
+      () => genArith(2, 5), () => genGeo(), () => genFib(), () => genQuad(),
+      () => genCaesar(2, 4, WORTE_KURZ.concat(WORTE_LANG)), () => genA1Z26(WORTE_KURZ),
+      () => genCode(4), () => genLogikFarbe(), () => genLogikZahl() ];
+    else gens = [
+      () => genArith(3, 7), () => genGeo(), () => genFib(), () => genQuad(), () => genPrimes(),
+      () => genCaesar(3, 6, WORTE_LANG), () => genA1Z26(WORTE_LANG),
+      () => genCode(rint(4, 5)), () => genLogikFarbe(), () => genLogikZahl() ];
+    const n = STUFEN_ANZAHL[diff], out = []; let bag = [];
+    for (let i = 0; i < n; i++) {
+      if (!bag.length) bag = shuffle(gens.slice());
+      const r = bag.pop()();
+      r.loesung = e => norm(e) === norm(r.antwort);
+      r.hinweisLoesung = r.antwort;
+      out.push(r);
+    }
+    return out;
+  }
+
+  /* ---- Spiel-Zustand ---- */
   let schwierigkeit = 'mittel';
-  let raetsel = STUFEN[schwierigkeit];
+  let raetsel = [];
   let modus = 'mensch';
   let geloest = [];
   let versuche = 0, startZeit = 0, zeitGeber = null, aktiv = -1, tippIndex = 0, kiTimer = null;
@@ -268,7 +320,7 @@
       const d = document.createElement('div');
       d.className = 'terminal' + (geloest[i] ? ' auf' : '');
       d.dataset.i = i;
-      d.innerHTML = '<div class="nr">TERMINAL ' + (i + 1) + ' // ' + r.typ + '</div>' +
+      d.innerHTML = '<div class="nr">T' + (i + 1) + ' · ' + r.typ + '</div>' +
         '<div class="name">' + r.name + '</div>' +
         '<div class="schloss">' + (geloest[i] ? '🔓' : '🔒') + '</div>';
       d.addEventListener('click', () => { if (modus === 'mensch') oeffne(i); });
@@ -307,9 +359,9 @@
     if (r.loesung(eingabe)) {
       geloest[aktiv] = true;
       el('m-rueck').style.color = 'var(--gruen)';
-      el('m-rueck').textContent = '✓ ZUGRIFF GEWÄHRT – Terminal entsperrt!';
+      el('m-rueck').textContent = '✓ ZUGRIFF GEWÄHRT!';
       baueGitter();
-      setTimeout(schliesse, 900);
+      setTimeout(schliesse, 800);
     } else {
       el('m-rueck').style.color = 'var(--rot)';
       el('m-rueck').textContent = '✗ ZUGRIFF VERWEIGERT';
@@ -341,7 +393,7 @@
         clearInterval(kiTimer); kiTimer = null;
         geloest[i] = true; versuche += daten.versuche; el('versuche').textContent = versuche;
         baueGitter();
-        setTimeout(() => kiHackeAlle(i + 1), 650);
+        setTimeout(() => kiHackeAlle(i + 1), 450);
         return;
       }
       const zeile = daten.log[idx], div = document.createElement('div');
@@ -357,7 +409,7 @@
   function starte(m) {
     modus = m;
     if (kiTimer) { clearInterval(kiTimer); kiTimer = null; }
-    raetsel = STUFEN[schwierigkeit];
+    raetsel = baueRaetsel(schwierigkeit);
     geloest = raetsel.map(() => false); versuche = 0; el('versuche').textContent = '0';
     el('stufe-anzeige').textContent = STUFE_NAME[schwierigkeit];
     el('modus-anzeige').textContent = m === 'ki' ? '🤖 KI' : '🧑 Mensch';
@@ -374,8 +426,8 @@
     el('modal-bg').style.display = 'none';
     const zeit = formatZeit(Math.floor((Date.now() - startZeit) / 1000));
     if (modus === 'ki') {
-      el('sieg-text').innerHTML = '🤖 Die KI hat sich rausgehackt (' + STUFE_NAME[schwierigkeit] + ')! Sie hat jedes Terminal ' +
-        'durch Ausprobieren geknackt.<br><br>Zeit: <b>' + zeit + '</b>, insgesamt <b>' + versuche + '</b> Versuche.';
+      el('sieg-text').innerHTML = '🤖 Die KI hat sich rausgehackt (' + STUFE_NAME[schwierigkeit] + ', ' + raetsel.length +
+        ' Terminals)! Sie hat alles durch Ausprobieren geknackt.<br><br>Zeit: <b>' + zeit + '</b>, insgesamt <b>' + versuche + '</b> Versuche.';
     } else {
       el('sieg-text').innerHTML = 'Du hast alle ' + raetsel.length + ' Terminals (' + STUFE_NAME[schwierigkeit] +
         ') geknackt und bist entkommen! 🎉<br><br>Gebraucht: <b>' + zeit + '</b> mit <b>' + versuche + '</b> Versuchen.';
@@ -386,14 +438,14 @@
   function zeigeStart() {
     if (kiTimer) { clearInterval(kiTimer); kiTimer = null; }
     if (zeitGeber) { clearInterval(zeitGeber); zeitGeber = null; }
-    raetsel = STUFEN[schwierigkeit]; geloest = raetsel.map(() => false); baueGitter();
+    raetsel = baueRaetsel(schwierigkeit); geloest = raetsel.map(() => false); baueGitter();
     el('modal-bg').style.display = 'none'; el('sieg').style.display = 'none'; el('start').style.display = 'flex';
   }
 
   function waehleStufe(s) {
     schwierigkeit = s;
     document.querySelectorAll('.stufe-btn').forEach(b => b.classList.toggle('aktiv', b.dataset.s === s));
-    raetsel = STUFEN[s]; geloest = raetsel.map(() => false); baueGitter();
+    raetsel = baueRaetsel(s); geloest = raetsel.map(() => false); baueGitter();
   }
 
   el('m-ok').addEventListener('click', pruefe);
@@ -408,7 +460,6 @@
   el('btn-reset').addEventListener('click', zeigeStart);
 
   waehleStufe('mittel');
-  baueGitter();
   </script>
 </body>
 </html>

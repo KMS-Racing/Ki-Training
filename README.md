@@ -36,9 +36,11 @@ Terminals mit je einem anderen Rätsel – **Muster fortsetzen, Geheimschrift
 knacken, Zahlencode aus Hinweisen, Logik-Rätsel**. Alle geknackt → der
 Notausgang öffnet sich. Mit Timer, Hinweisen und „Zugriff verweigert“.
 
-Drei Schwierigkeitsgrade: **Leicht (3 Rätsel) / Mittel (4) / Schwer (5)** –
-schwerere Stufen haben mehr und kniffligere Rätsel (Primzahlen, Caesar +4,
-Mathe-Code, Zahlen-Geheimschrift A=1…).
+Drei Schwierigkeitsgrade: **Leicht (10 Rätsel) / Mittel (20) / Schwer (30)**.
+Die Rätsel werden von **Generatoren** bei jedem Start frisch gewürfelt (und die
+Lösung selbst berechnet – deshalb immer korrekt und jedes Mal anders). Schwerere
+Stufen bringen mehr und kniffligere Rätsel (Primzahlen, größere Caesar-
+Verschiebungen, längere Wörter, 5-stellige Mathe-Codes).
 
 Zwei Modi: **🧑 Selbst spielen** oder **🤖 KI zuschauen** – im KI-Modus knackt
 die KI die Terminals automatisch durchs Ausprobieren/Durchsuchen (z.B. das
