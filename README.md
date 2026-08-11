@@ -36,4 +36,8 @@ Terminals mit je einem anderen Rätsel – **Muster fortsetzen, Geheimschrift
 knacken, Zahlencode aus Hinweisen, Logik-Rätsel**. Alle geknackt → der
 Notausgang öffnet sich. Mit Timer, Hinweisen und „Zugriff verweigert“.
 
+Zwei Modi: **🧑 Selbst spielen** oder **🤖 KI zuschauen** – im KI-Modus knackt
+die KI die Terminals automatisch durchs Ausprobieren/Durchsuchen (z.B. das
+Zahlenschloss über 4000-mal), und man schaut ihr dabei zu.
+
 ➡️ Einfach `escape-room/index.html` im Browser öffnen.

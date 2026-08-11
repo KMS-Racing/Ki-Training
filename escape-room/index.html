@@ -14,9 +14,9 @@
     }
     h1 { font-size: 1.4rem; letter-spacing: 0.25em; color: var(--gruen); text-align: center;
       text-shadow: 0 0 8px #33ff7788; margin-bottom: 0.3rem; }
-    #status-zeile { font-size: 0.8rem; color: #6f8f78; letter-spacing: 0.1em; margin-bottom: 1.4rem; text-align: center; }
+    #status-zeile { font-size: 0.8rem; color: #6f8f78; letter-spacing: 0.1em; margin-bottom: 1.2rem; text-align: center; }
 
-    .leiste { display: flex; gap: 1.5rem; justify-content: center; align-items: center; margin-bottom: 1.6rem;
+    .leiste { display: flex; gap: 1.5rem; justify-content: center; align-items: center; margin-bottom: 1.4rem;
       font-size: 0.85rem; color: #8fb89a; flex-wrap: wrap; }
     .leiste b { color: var(--gruen); }
 
@@ -33,6 +33,7 @@
     .terminal .schloss { font-size: 1.6rem; }
     .terminal.auf { border-color: var(--gruen); background: #0c1f12; }
     .terminal.auf .name { color: var(--gruen); }
+    .terminal.arbeitet { border-color: #ff9f0a; box-shadow: 0 0 14px #ff9f0a55; }
 
     .tuer {
       grid-column: 1 / -1; border: 1px dashed #333; border-radius: 8px; padding: 1rem; text-align: center;
@@ -41,7 +42,6 @@
     .tuer.offen { border: 1px solid var(--gruen); color: var(--gruen); cursor: pointer;
       box-shadow: 0 0 18px #33ff7744; background: #0c1f12; }
 
-    /* Modal */
     #modal-bg { position: fixed; inset: 0; background: #000c; display: none; align-items: center; justify-content: center; padding: 1rem; z-index: 10; }
     #modal { background: #0a140d; border: 1px solid var(--gruen); border-radius: 10px; max-width: 480px; width: 100%;
       padding: 1.4rem; box-shadow: 0 0 30px #33ff7733; }
@@ -64,12 +64,17 @@
     .fehler { animation: wackel 0.3s; }
     @keyframes wackel { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
 
-    /* Start & Sieg Overlay */
+    /* KI-Log */
+    #m-ki-log { display: none; background: #04120a; border: 1px solid #234; border-radius: 5px; padding: 0.7rem;
+      font-size: 0.8rem; line-height: 1.6; color: #8fdfa4; max-height: 190px; overflow-y: auto; white-space: pre-wrap; }
+    #m-ki-log .ok { color: var(--gruen); font-weight: bold; }
+
     .overlay { position: fixed; inset: 0; background: #050a06f2; display: flex; flex-direction: column;
       align-items: center; justify-content: center; text-align: center; padding: 2rem; z-index: 20; }
     .overlay h2 { color: var(--gruen); font-size: 1.6rem; letter-spacing: 0.15em; margin-bottom: 1rem; text-shadow: 0 0 10px #33ff7788; }
     .overlay p { color: #b6d6bd; max-width: 460px; line-height: 1.7; margin-bottom: 1.4rem; font-size: 0.92rem; }
-    .overlay button { font-size: 0.95rem; padding: 0.8rem 2rem; }
+    .overlay .knopf-reihe { display: flex; gap: 0.8rem; flex-wrap: wrap; justify-content: center; }
+    .overlay button { font-size: 0.9rem; padding: 0.8rem 1.6rem; border-color: var(--gruen); color: var(--gruen); }
     #sieg { display: none; }
   </style>
 </head>
@@ -78,59 +83,61 @@
   <div id="status-zeile">SYSTEM: Ausgang gesperrt // 4 Sicherheits-Terminals aktiv</div>
 
   <div class="leiste">
+    <div>Modus: <b id="modus-anzeige">–</b></div>
     <div>Entsperrt: <b id="fortschritt">0 / 4</b></div>
     <div>Zeit: <b id="zeit">00:00</b></div>
-    <div>Versuche: <b id="versuche">0</b></div>
+    <div><span id="versuche-label">Versuche</span>: <b id="versuche">0</b></div>
   </div>
 
-  <div id="gitter"><!-- Terminals + Tür per JS --></div>
+  <div id="gitter"></div>
 
-  <button id="btn-reset" style="margin-top:0.5rem;">↺ Neu starten</button>
+  <button id="btn-reset" style="margin-top:0.5rem;">↺ Neu / Modus wechseln</button>
 
-  <!-- Rätsel-Fenster -->
   <div id="modal-bg">
     <div id="modal">
       <div class="kopf" id="m-kopf"></div>
       <div class="frage" id="m-frage"></div>
       <input id="m-input" autocomplete="off" placeholder="Antwort eintippen…" />
-      <div class="knopf-reihe">
+      <div class="knopf-reihe" id="m-knopfe">
         <button class="haupt" id="m-ok">Bestätigen</button>
         <button id="m-tipp">Hinweis</button>
         <button id="m-zu">Zurück</button>
       </div>
+      <div id="m-ki-log"></div>
       <div class="rueck" id="m-rueck"></div>
       <div class="tipp" id="m-tipp-text"></div>
     </div>
   </div>
 
-  <!-- Start -->
   <div class="overlay" id="start">
     <h2>&#128274; EINGESCHLOSSEN</h2>
-    <p>Du bist im geheimen KI-Labor eingeschlossen. Die künstliche Intelligenz hat alle Türen verriegelt.
-       Um zu entkommen, musst du <b>vier Sicherheits-Terminals</b> hacken – jedes hat ein anderes Rätsel.
-       Knackst du alle, öffnet sich der Notausgang. Los geht's!</p>
-    <button class="haupt" id="btn-start" style="border:1px solid var(--gruen); color:var(--gruen);">▶ Hacken starten</button>
+    <p>Du bist im geheimen KI-Labor eingeschlossen. Um zu entkommen, müssen <b>vier Sicherheits-Terminals</b>
+       geknackt werden – jedes mit einem anderen Rätsel. Spielst du selbst, oder schaust du der KI beim
+       Raushacken zu?</p>
+    <div class="knopf-reihe">
+      <button class="haupt" id="btn-start-mensch">🧑 Selbst spielen</button>
+      <button class="haupt" id="btn-start-ki">🤖 KI zuschauen</button>
+    </div>
   </div>
 
-  <!-- Sieg -->
   <div class="overlay" id="sieg">
     <h2>&#128275; AUSGEBROCHEN!</h2>
     <p id="sieg-text"></p>
-    <button class="haupt" id="btn-nochmal" style="border:1px solid var(--gruen); color:var(--gruen);">↺ Nochmal</button>
+    <div class="knopf-reihe"><button class="haupt" id="btn-nochmal">↺ Nochmal</button></div>
   </div>
 
   <script>
   /* =========================================================================
-     KI-LABOR – AUSBRUCH  (Escape Room mit echten Rätseln)
-     Du hackst 4 Terminals. Jedes hat ein anderes Rätsel. Alle gelöst -> raus.
-     Lösungen stehen unten bei den Rätseln (loesung), damit du den Code
-     verstehst. Antworten werden mit norm() (Großbuchstaben, ohne Leerzeichen)
-     verglichen, damit Klein-/Großschreibung egal ist.
+     KI-LABOR – AUSBRUCH  (Escape Room, zwei Modi)
+       🧑 Mensch-Modus : du löst die 4 Rätsel selbst.
+       🤖 KI-Modus     : die KI knackt die Terminals automatisch durchs
+                         Ausprobieren/Durchsuchen – du schaust zu.
+     (Kein Wettkampf – im KI-Modus spielt der Mensch nicht mit.)
      ========================================================================= */
 
   const norm = s => s.toUpperCase().replace(/\s+/g, '').trim();
+  const pad4 = n => String(n).padStart(4, '0');
 
-  // Die vier Rätsel. loesung(eingabe) -> true/false.
   const RAETSEL = [
     {
       name: 'Sequenz-Scanner', typ: 'MUSTER',
@@ -138,7 +145,13 @@
              '<code>1 &nbsp; 1 &nbsp; 2 &nbsp; 3 &nbsp; 5 &nbsp; 8 &nbsp; 13 &nbsp; ?</code>',
       tipps: ['Schau dir immer zwei Zahlen nebeneinander an.', 'Addiere die zwei Zahlen davor: 8 + 13 = ?'],
       loesung: e => norm(e) === '21',
-      hinweisLoesung: '21 (Fibonacci: jede Zahl ist die Summe der zwei davor)'
+      hinweisLoesung: '21 (Fibonacci: jede Zahl ist die Summe der zwei davor)',
+      // Die KI testet Regeln durch, bis eine passt:
+      ki: () => ({ delay: 650, versuche: 3, log: [
+        'Teste Regel „mal 2“: 1×2=2 ✓, aber 2×2=4 ≠ 3  ✗',
+        'Teste Regel „immer +1,+2,+3…“: passt nicht  ✗',
+        'Teste Regel „die zwei davor addieren“: 1+1=2 ✓, 1+2=3 ✓, 2+3=5 ✓ …  passt!',
+        '>>Regel erkannt: nächste Zahl = 8 + 13 = 21<<' ] })
     },
     {
       name: 'Chiffre-Modul', typ: 'GEHEIMSCHRIFT',
@@ -146,7 +159,13 @@
              'verschoben (aus A wird D, aus B wird E …). Entschlüssle es:<br><br><code>K D F N</code>',
       tipps: ['Gehe pro Buchstabe 3 Schritte im Alphabet ZURÜCK.', 'K → J → I → H. Mach das mit jedem Buchstaben.'],
       loesung: e => norm(e) === 'HACK',
-      hinweisLoesung: 'HACK (K→H, D→A, F→C, N→K)'
+      hinweisLoesung: 'HACK (K→H, D→A, F→C, N→K)',
+      // Die KI probiert alle Verschiebungen, bis ein echtes Wort rauskommt:
+      ki: () => ({ delay: 550, versuche: 3, log: [
+        'Verschiebung 1 zurück: J C E M  … kein Wort  ✗',
+        'Verschiebung 2 zurück: I B D L  … kein Wort  ✗',
+        'Verschiebung 3 zurück: H A C K  … echtes Wort!  ✓',
+        '>>Passwort geknackt: HACK<<' ] })
     },
     {
       name: 'Zahlenschloss', typ: 'ZAHLENCODE',
@@ -159,7 +178,13 @@
              '</ul>',
       tipps: ['Quadrat = 4 Seiten, Dreieck = 3 Ecken …', 'Kleinste Primzahl ist 2 (nicht 1!). Hand = 5 Finger.'],
       loesung: e => norm(e) === '4325',
-      hinweisLoesung: '4325'
+      hinweisLoesung: '4325',
+      // Die Kz zählt einfach stur hoch (Brute Force), bis das Schloss aufgeht:
+      ki: () => { const log = ['Kein Hinweis nötig – ich probiere einfach ALLE Codes durch:'];
+        for (let k = 0; k <= 4200; k += 168) log.push('Probiere ' + pad4(k) + ' …  ✗');
+        log.push('Probiere 4325 …  ✓');
+        log.push('>>Code geknackt: 4325 (nach 4326 Versuchen!)<<');
+        return { delay: 75, versuche: 4326, log }; }
     },
     {
       name: 'Logik-Kern', typ: 'LOGIK',
@@ -171,12 +196,20 @@
              '</ul>Welche Farbe hat <b>Carla</b>?',
       tipps: ['Ben hat blau – also bleiben für Anna nur rot oder grün.', 'Anna hat nicht rot → Anna hat grün. Was bleibt für Carla?'],
       loesung: e => norm(e) === 'ROT',
-      hinweisLoesung: 'rot (Ben=blau, Anna=grün, also Carla=rot)'
+      hinweisLoesung: 'rot (Ben=blau, Anna=grün, also Carla=rot)',
+      // Die KI schließt logisch Schritt für Schritt:
+      ki: () => ({ delay: 650, versuche: 1, log: [
+        'Gegeben: Ben = blau',
+        'Anna ≠ rot, und blau ist schon vergeben  →  Anna = grün',
+        'Übrig bleibt nur noch: Carla = rot',
+        '>>Lösung: rot<<' ] })
     },
   ];
 
+  let modus = 'mensch';                 // 'mensch' | 'ki'
   let geloest = [false, false, false, false];
   let versuche = 0, startZeit = 0, zeitGeber = null, aktiv = -1, tippIndex = 0;
+  let kiTimer = null;
 
   const el = id => document.getElementById(id);
   const gitter = el('gitter');
@@ -186,31 +219,32 @@
     RAETSEL.forEach((r, i) => {
       const d = document.createElement('div');
       d.className = 'terminal' + (geloest[i] ? ' auf' : '');
+      d.dataset.i = i;
       d.innerHTML = '<div class="nr">TERMINAL ' + (i + 1) + ' // ' + r.typ + '</div>' +
         '<div class="name">' + r.name + '</div>' +
         '<div class="schloss">' + (geloest[i] ? '🔓' : '🔒') + '</div>';
-      d.addEventListener('click', () => oeffne(i));
+      d.addEventListener('click', () => { if (modus === 'mensch') oeffne(i); });
       gitter.appendChild(d);
     });
     const t = document.createElement('div');
     const alle = geloest.every(x => x);
     t.className = 'tuer' + (alle ? ' offen' : '');
-    t.innerHTML = alle ? '🚪 NOTAUSGANG OFFEN — hier klicken zum Entkommen!' : '🚪 NOTAUSGANG — noch verriegelt (' + geloest.filter(x => x).length + '/4)';
-    if (alle) t.addEventListener('click', gewonnen);
+    t.innerHTML = alle ? '🚪 NOTAUSGANG OFFEN' + (modus === 'mensch' ? ' — hier klicken zum Entkommen!' : '') : '🚪 NOTAUSGANG — noch verriegelt (' + geloest.filter(x => x).length + '/4)';
+    if (alle && modus === 'mensch') t.addEventListener('click', gewonnen);
     gitter.appendChild(t);
-
     el('fortschritt').textContent = geloest.filter(x => x).length + ' / 4';
   }
 
+  /* ---------- Mensch-Modus ---------- */
   function oeffne(i) {
-    if (geloest[i]) return;           // schon gelöst
+    if (geloest[i]) return;
     aktiv = i; tippIndex = 0;
     const r = RAETSEL[i];
     el('m-kopf').textContent = 'TERMINAL ' + (i + 1) + ' :: ' + r.name;
     el('m-frage').innerHTML = r.frage;
     el('m-input').value = '';
-    el('m-rueck').textContent = '';
-    el('m-tipp-text').textContent = '';
+    el('m-input').style.display = ''; el('m-knopfe').style.display = ''; el('m-ki-log').style.display = 'none';
+    el('m-rueck').textContent = ''; el('m-tipp-text').textContent = '';
     el('modal-bg').style.display = 'flex';
     el('m-input').focus();
   }
@@ -241,32 +275,85 @@
     else el('m-tipp-text').textContent = '💡 (Lösung: ' + r.hinweisLoesung + ')';
   }
 
+  /* ---------- KI-Modus (schaut zu, wie die KI hackt) ---------- */
+  function kiHackeAlle(i) {
+    if (i >= RAETSEL.length) { gewonnen(); return; }
+    const r = RAETSEL[i], daten = r.ki();
+    aktiv = i;
+    document.querySelectorAll('.terminal').forEach(t => t.classList.toggle('arbeitet', +t.dataset.i === i));
+    el('m-kopf').textContent = 'TERMINAL ' + (i + 1) + ' :: ' + r.name + '  [KI hackt…]';
+    el('m-frage').innerHTML = r.frage;
+    el('m-input').style.display = 'none'; el('m-knopfe').style.display = 'none';
+    el('m-ki-log').style.display = 'block'; el('m-ki-log').innerHTML = '';
+    el('m-rueck').textContent = ''; el('m-tipp-text').textContent = '';
+    el('modal-bg').style.display = 'flex';
+
+    let idx = 0;
+    kiTimer = setInterval(() => {
+      if (idx >= daten.log.length) {
+        clearInterval(kiTimer); kiTimer = null;
+        geloest[i] = true; versuche += daten.versuche; el('versuche').textContent = versuche;
+        baueGitter();
+        setTimeout(() => kiHackeAlle(i + 1), 650);
+        return;
+      }
+      const zeile = daten.log[idx];
+      const div = document.createElement('div');
+      if (zeile.startsWith('>>')) { div.className = 'ok'; div.textContent = '✓ ' + zeile.replace(/>>|<</g, ''); }
+      else div.textContent = zeile;
+      el('m-ki-log').appendChild(div);
+      el('m-ki-log').scrollTop = el('m-ki-log').scrollHeight;
+      idx++;
+    }, daten.delay);
+  }
+
+  /* ---------- gemeinsam ---------- */
   function formatZeit(s) { return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
   function tickZeit() { el('zeit').textContent = formatZeit(Math.floor((Date.now() - startZeit) / 1000)); }
 
-  function starte() {
+  function starte(m) {
+    modus = m;
+    if (kiTimer) { clearInterval(kiTimer); kiTimer = null; }
     geloest = [false, false, false, false]; versuche = 0; el('versuche').textContent = '0';
+    el('modus-anzeige').textContent = m === 'ki' ? '🤖 KI' : '🧑 Mensch';
+    el('versuche-label').textContent = m === 'ki' ? 'KI-Versuche' : 'Versuche';
     startZeit = Date.now(); if (zeitGeber) clearInterval(zeitGeber); zeitGeber = setInterval(tickZeit, 1000); tickZeit();
     baueGitter();
     el('start').style.display = 'none'; el('sieg').style.display = 'none';
+    if (m === 'ki') kiHackeAlle(0);
   }
 
   function gewonnen() {
-    clearInterval(zeitGeber);
+    clearInterval(zeitGeber); if (kiTimer) { clearInterval(kiTimer); kiTimer = null; }
+    document.querySelectorAll('.terminal').forEach(t => t.classList.remove('arbeitet'));
+    el('modal-bg').style.display = 'none';
     const zeit = formatZeit(Math.floor((Date.now() - startZeit) / 1000));
-    el('sieg-text').innerHTML = 'Du hast alle vier Terminals gehackt und bist aus dem KI-Labor entkommen! 🎉<br><br>' +
-      'Gebraucht: <b>' + zeit + '</b> mit <b>' + versuche + '</b> Versuchen.';
+    if (modus === 'ki') {
+      el('sieg-text').innerHTML = '🤖 Die KI hat sich rausgehackt! Sie hat jedes Terminal durch Ausprobieren geknackt ' +
+        '– allein das Zahlenschloss über <b>4000-mal</b>.<br><br>Zeit: <b>' + zeit + '</b>, insgesamt <b>' + versuche + '</b> Versuche.';
+    } else {
+      el('sieg-text').innerHTML = 'Du hast alle vier Terminals gehackt und bist aus dem KI-Labor entkommen! 🎉<br><br>' +
+        'Gebraucht: <b>' + zeit + '</b> mit <b>' + versuche + '</b> Versuchen.';
+    }
     el('sieg').style.display = 'flex';
+  }
+
+  function zeigeStart() {
+    if (kiTimer) { clearInterval(kiTimer); kiTimer = null; }
+    if (zeitGeber) { clearInterval(zeitGeber); zeitGeber = null; }
+    geloest = [false, false, false, false]; baueGitter();
+    el('modal-bg').style.display = 'none'; el('sieg').style.display = 'none'; el('start').style.display = 'flex';
   }
 
   el('m-ok').addEventListener('click', pruefe);
   el('m-tipp').addEventListener('click', zeigeTipp);
   el('m-zu').addEventListener('click', schliesse);
   el('m-input').addEventListener('keydown', e => { if (e.key === 'Enter') pruefe(); });
-  el('modal-bg').addEventListener('click', e => { if (e.target === el('modal-bg')) schliesse(); });
-  el('btn-start').addEventListener('click', starte);
-  el('btn-nochmal').addEventListener('click', starte);
-  el('btn-reset').addEventListener('click', starte);
+  el('modal-bg').addEventListener('click', e => { if (e.target === el('modal-bg') && modus === 'mensch') schliesse(); });
+  el('btn-start-mensch').addEventListener('click', () => starte('mensch'));
+  el('btn-start-ki').addEventListener('click', () => starte('ki'));
+  el('btn-nochmal').addEventListener('click', zeigeStart);
+  el('btn-reset').addEventListener('click', zeigeStart);
 
   baueGitter();
   </script>
