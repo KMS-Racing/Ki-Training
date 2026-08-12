@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KI-Labor – Code-Ausbruch</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --gruen: #33ff77; --rot: #ff5f57; --gelb: #ffd23f; }
+    body { min-height: 100vh; background: #05080a; color: #cfe4e9;
+      font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; padding: 1.5rem 1rem; }
+    h1 { font-size: 1.3rem; letter-spacing: 0.22em; color: var(--gruen); text-align: center; text-shadow: 0 0 8px #33ff7788; margin-bottom: 0.2rem; }
+    #kopfzeile { font-size: 0.75rem; color: #5f7f88; letter-spacing: 0.1em; margin-bottom: 1rem; text-align: center; }
+
+    #system { display: flex; gap: 0.7rem; align-items: flex-start; max-width: 780px; width: 100%;
+      background: #0b1a12; border: 1px solid #1f6f3f; border-radius: 8px; padding: 0.7rem 0.9rem; margin-bottom: 1rem; }
+    #system .bot { font-size: 1.5rem; }
+    #system .txt { font-size: 0.85rem; line-height: 1.5; color: #9fe6b6; }
+    #system .txt b { color: var(--gruen); }
+
+    .leiste { display: flex; gap: 1.4rem; justify-content: center; font-size: 0.8rem; color: #7fa89a; margin-bottom: 1rem; flex-wrap: wrap; }
+    .leiste b { color: var(--gruen); }
+    #warn { display: none; max-width: 780px; width: 100%; margin-bottom: 1rem; padding: 0.6rem 0.9rem; border: 1px solid var(--rot);
+      border-radius: 6px; color: #ffb3ae; font-size: 0.8rem; background: #1a0b0b; }
+
+    #haupt { display: flex; gap: 1.2rem; max-width: 780px; width: 100%; flex-wrap: wrap; }
+    #szene-box { flex: 1 1 420px; }
+    #raum-name { font-size: 0.8rem; letter-spacing: 0.15em; color: var(--gelb); margin-bottom: 0.6rem; text-transform: uppercase; }
+    #szene { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.7rem; }
+    .obj { border: 1px solid #223; border-radius: 8px; background: #0a1418; padding: 0.9rem 0.5rem; text-align: center;
+      cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s; }
+    .obj:hover { border-color: var(--gruen); box-shadow: 0 0 10px #33ff7733; transform: translateY(-2px); }
+    .obj .icon { font-size: 1.9rem; }
+    .obj .lbl { font-size: 0.68rem; color: #9fb8bf; margin-top: 0.3rem; }
+    .obj.code { border-color: #2b6cff55; }
+    .obj.tuer { grid-column: 1 / -1; border-color: #444; border-style: dashed; }
+    .obj.tuer.auf { border-color: var(--gruen); border-style: solid; box-shadow: 0 0 16px #33ff7744; }
+    .obj.geloest { opacity: 0.6; }
+    .obj.geloest .icon::after { content: ' ✓'; color: var(--gruen); font-size: 1rem; }
+
+    #notiz-box { flex: 1 1 200px; border: 1px solid #223; border-radius: 8px; background: #08110d; padding: 0.8rem; }
+    #notiz-box h2 { font-size: 0.72rem; letter-spacing: 0.1em; color: #7fa89a; margin-bottom: 0.5rem; text-transform: uppercase; }
+    #notizen { list-style: none; font-size: 0.8rem; line-height: 1.7; color: var(--gelb); }
+    #notizen li::before { content: '📌 '; }
+    #notizen .leer { color: #55716a; font-style: italic; }
+
+    button { padding: 0.5rem 1.1rem; border: 1px solid #345; background: transparent; color: #cfe4e9;
+      font-family: 'Courier New', monospace; font-size: 0.78rem; letter-spacing: 0.1em; cursor: pointer;
+      text-transform: uppercase; border-radius: 5px; transition: border-color 0.2s, color 0.2s; }
+    button:hover { border-color: var(--gruen); color: var(--gruen); }
+    button.haupt { border-color: var(--gruen); color: var(--gruen); }
+    #knopfleiste { margin-top: 1.1rem; display: flex; gap: 0.7rem; }
+
+    #modal-bg { position: fixed; inset: 0; background: #000d; display: none; align-items: center; justify-content: center; padding: 1rem; z-index: 10; }
+    #modal { background: #0a1418; border: 1px solid var(--gruen); border-radius: 10px; max-width: 640px; width: 100%; padding: 1.3rem; box-shadow: 0 0 30px #33ff7733; max-height: 92vh; overflow-y: auto; }
+    #modal .m-name { color: var(--gruen); letter-spacing: 0.1em; margin-bottom: 0.6rem; font-size: 1rem; }
+    #modal .m-text { font-size: 0.9rem; line-height: 1.6; color: #dcefe0; margin-bottom: 0.8rem; }
+    #modal .m-text code, #modal .beispiel code { background: #04250f; color: var(--gruen); padding: 0.05em 0.35em; border-radius: 3px; }
+    #modal input.code-lock { width: 100%; padding: 0.7rem; margin-top: 0.4rem; background: #04120a; border: 1px solid #345; border-radius: 5px;
+      color: var(--gruen); font-family: 'Courier New', monospace; font-size: 1.1rem; letter-spacing: 0.25em; text-align: center; }
+    #editor { width: 100%; min-height: 190px; background: #04120a; border: 1px solid #2b6cff55; border-radius: 6px; padding: 0.7rem;
+      color: #cfe9d4; font-family: 'Courier New', monospace; font-size: 0.9rem; line-height: 1.5; resize: vertical; white-space: pre; }
+    #editor:focus { outline: none; border-color: var(--gruen); }
+    .m-knopfe { display: flex; gap: 0.6rem; margin-top: 0.8rem; flex-wrap: wrap; }
+    #test-ausgabe { margin-top: 0.9rem; font-size: 0.82rem; line-height: 1.6; background: #04120a; border: 1px solid #234; border-radius: 5px; padding: 0.6rem; min-height: 2em; white-space: pre-wrap; }
+    #test-ausgabe .ok { color: var(--gruen); } #test-ausgabe .no { color: var(--rot); } #test-ausgabe .big { color: var(--gelb); font-weight: bold; }
+    .m-rueck { min-height: 1.2em; text-align: center; font-size: 0.82rem; margin-top: 0.6rem; }
+    .fehler { animation: wackel 0.3s; }
+    @keyframes wackel { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
+
+    .overlay { position: fixed; inset: 0; background: #05080af5; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; z-index: 20; }
+    .overlay h2 { color: var(--gruen); font-size: 1.7rem; letter-spacing: 0.12em; margin-bottom: 1rem; text-shadow: 0 0 10px #33ff7788; }
+    .overlay p { color: #b6d6bd; max-width: 480px; line-height: 1.7; margin-bottom: 1.4rem; font-size: 0.92rem; }
+    .overlay button.haupt { font-size: 0.95rem; padding: 0.8rem 2rem; }
+    #sieg { display: none; }
+  </style>
+</head>
+<body>
+  <h1>KI-LABOR</h1>
+  <div id="kopfzeile">CODE-AUSBRUCH — schreibe Code, knacke die Terminals, entkomme der KI.</div>
+
+  <div id="system"><div class="bot">🤖</div><div class="txt" id="system-txt"></div></div>
+  <div id="warn">⚠️ Diese Umgebung blockiert das Ausführen von Code. Öffne die GitHub-Version (escape-code/index.html) im Browser, dann läuft alles.</div>
+
+  <div class="leiste">
+    <div>Raum: <b id="raum-nr">1 / 3</b></div>
+    <div>Zeit: <b id="zeit">00:00</b></div>
+    <div>Terminals geknackt: <b id="fund-zahl">0</b></div>
+  </div>
+
+  <div id="haupt">
+    <div id="szene-box"><div id="raum-name"></div><div id="szene"></div></div>
+    <div id="notiz-box"><h2>📓 Notizbuch</h2><ul id="notizen"></ul></div>
+  </div>
+
+  <div id="knopfleiste">
+    <button id="btn-hinweis">💡 SYSTEM um Tipp bitten</button>
+    <button id="btn-reset">↺ Neu starten</button>
+  </div>
+
+  <div id="modal-bg"><div id="modal">
+    <div class="m-name" id="m-name"></div>
+    <div class="m-text" id="m-text"></div>
+    <!-- Code-Editor (nur bei Code-Terminals sichtbar) -->
+    <div id="code-bereich" style="display:none;">
+      <textarea id="editor" spellcheck="false"></textarea>
+      <div class="m-knopfe">
+        <button class="haupt" id="btn-run" style="flex:1;">▶ Ausführen &amp; Testen</button>
+        <button id="btn-tipp2">💡 Tipp</button>
+      </div>
+      <div id="test-ausgabe"></div>
+    </div>
+    <!-- Tür-Eingabe -->
+    <div id="lock-bereich" style="display:none;">
+      <input class="code-lock" id="m-lock" autocomplete="off" placeholder="Code / Wort…" />
+      <div class="m-knopfe"><button class="haupt" id="btn-lock" style="flex:1;">Tür öffnen</button></div>
+    </div>
+    <div class="m-rueck" id="m-rueck"></div>
+    <div class="m-knopfe"><button id="m-zu" style="flex:1;">Zurück</button></div>
+  </div></div>
+
+  <div class="overlay" id="start">
+    <h2>&#128274; EINGESCHLOSSEN</h2>
+    <p>Du bist ein Hacker im geheimen <b>KI-Labor</b>. Die KI <b>SYSTEM</b> hat drei Türen verriegelt.
+       In jedem Raum steht ein <b>Code-Terminal</b>: Schreibe dort eine kleine <b>Funktion</b> in JavaScript.
+       Wenn sie alle Tests besteht, verrät das Terminal den <b>Türcode</b>. Programmier dich in die Freiheit!</p>
+    <button class="haupt" id="btn-start">▶ Ausbruch starten</button>
+  </div>
+
+  <div class="overlay" id="sieg">
+    <h2>&#128275; FREIHEIT!</h2>
+    <p id="sieg-text"></p>
+    <button class="haupt" id="btn-nochmal">↺ Nochmal ausbrechen</button>
+  </div>
+
+  <script>
+  /* =========================================================================
+     KI-LABOR – CODE-AUSBRUCH
+     Coding-Escape-Room: In jedem Raum schreibst du eine kleine JS-Funktion in
+     ein Code-Terminal. Besteht sie alle Tests, wird sie mit einer geheimen
+     Eingabe ausgeführt – das Ergebnis ist der Türcode. Story + KI-Gegenspieler
+     (SYSTEM) + Notizbuch, wie im Story-Escape.
+     ========================================================================= */
+
+  const norm = s => ('' + s).toUpperCase().replace(/\s+/g, '').trim();
+  const klon = a => Array.isArray(a) ? a.slice() : a;
+  const zeigeArg = a => JSON.stringify(a);
+
+  // Kann diese Umgebung überhaupt Code ausführen? (Artefakt evtl. gesperrt)
+  let CODE_OK = true;
+  try { new Function('return 1')(); } catch (e) { CODE_OK = false; }
+
+  const RAEUME = [
+    {
+      name: 'Rechenzentrum',
+      system: 'Ein Hacker im <b>Rechenzentrum</b>? Süß. Am Code-Terminal brauchst du eine <b>quersumme</b>-Funktion. Kannst du überhaupt programmieren? 🤖',
+      aufgabe: {
+        fnName: 'quersumme',
+        text: 'Schreibe <code>quersumme(n)</code>: die <b>Summe der Ziffern</b> von n.<br>Beispiel: <code>quersumme(123) = 1+2+3 = 6</code>.',
+        skelett: 'function quersumme(n) {\n  // Tipp: (\'\'+n) macht aus der Zahl Text\n  \n}',
+        tipp: 'Mach aus n Text: (\'\'+n).split(\'\') gibt die Ziffern. Wandle jede mit Number(z) um und addiere sie.',
+        tests: [ {args:[123], erwartet:6}, {args:[40], erwartet:4}, {args:[7], erwartet:7}, {args:[999], erwartet:27} ],
+        geheim: [4821],
+      },
+      flavor: { icon: '📄', name: 'Notiz', text: '„SYSTEM hasst Quersummen. Keine Ahnung warum.“ — Praktikant' },
+    },
+    {
+      name: 'Archiv',
+      system: 'Noch da? Diese Tür will ein <b>Wort</b>. Am Terminal fehlt eine <b>umkehren</b>-Funktion – dreh den Text um, falls du kannst. 🤖',
+      aufgabe: {
+        fnName: 'umkehren',
+        text: 'Schreibe <code>umkehren(text)</code>: gibt den Text <b>rückwärts</b> zurück.<br>Beispiel: <code>umkehren("abc") = "cba"</code>.',
+        skelett: 'function umkehren(text) {\n  \n}',
+        tipp: 'Ein String lässt sich so umdrehen: text.split(\'\').reverse().join(\'\').',
+        tests: [ {args:['abc'], erwartet:'cba'}, {args:['KI'], erwartet:'IK'}, {args:['OTTO'], erwartet:'OTTO'} ],
+        geheim: ['NORUEN'],
+      },
+      flavor: { icon: '🖼️', name: 'Poster', text: 'Ein Poster: „Lies rückwärts, denk vorwärts.“' },
+    },
+    {
+      name: 'Kern',
+      system: 'Beeindruckend. Aber der <b>Notausgang</b> gibt nur nach, wenn du die <b>größte Zahl</b> einer Liste findest. Niemals schaffst du das. 🤖',
+      aufgabe: {
+        fnName: 'groessteZahl',
+        text: 'Schreibe <code>groessteZahl(liste)</code>: gibt die <b>größte Zahl</b> der Liste zurück.<br>Beispiel: <code>groessteZahl([3,1,2]) = 3</code>.',
+        skelett: 'function groessteZahl(liste) {\n  \n}',
+        tipp: 'Entweder Math.max(...liste) – oder die Liste durchgehen und dir die größte merken.',
+        tests: [ {args:[[3,1,2]], erwartet:3}, {args:[[9]], erwartet:9}, {args:[[-1,-5,-2]], erwartet:-1}, {args:[[4,8,1,8]], erwartet:8} ],
+        geheim: [[42,17,99,8,63]],
+      },
+      flavor: { icon: '🖥️', name: 'Bildschirm', text: 'Zahlen rauschen vorbei. „Nur die Größte zählt.“' },
+    },
+  ];
+
+  const TAUNTS = ['Falsch. Wie überraschend.', 'Nein. Dein Code ist Spaghetti.', 'Zugriff verweigert. *piep*',
+    'Das war nicht mal nah dran.', 'Ich lache in Maschinencode.'];
+
+  let raumIdx = 0, notizen = [], startZeit = 0, zeitGeber = null;
+
+  const el = id => document.getElementById(id);
+  const raum = () => RAEUME[raumIdx];
+  const setSystem = html => { el('system-txt').innerHTML = html; };
+
+  function renderRaum() {
+    const r = raum();
+    setSystem(r.system);
+    el('raum-name').textContent = 'Raum ' + (raumIdx + 1) + ' — ' + r.name;
+    el('raum-nr').textContent = (raumIdx + 1) + ' / ' + RAEUME.length;
+    const sz = el('szene'); sz.innerHTML = '';
+    // Code-Terminal
+    const c = document.createElement('div');
+    c.className = 'obj code' + (r.aufgabe.geloest ? ' geloest' : '');
+    c.innerHTML = '<div class="icon">💻</div><div class="lbl">Code-Terminal<br>(' + r.aufgabe.fnName + ')</div>';
+    c.addEventListener('click', zeigeCode);
+    sz.appendChild(c);
+    // Flavor-Objekt
+    const f = document.createElement('div');
+    f.className = 'obj';
+    f.innerHTML = '<div class="icon">' + r.flavor.icon + '</div><div class="lbl">' + r.flavor.name + '</div>';
+    f.addEventListener('click', () => zeigeInfo(r.flavor));
+    sz.appendChild(f);
+    // Tür
+    const t = document.createElement('div');
+    t.className = 'obj tuer auf';
+    t.innerHTML = '<div class="icon">🚪</div><div class="lbl">' + (raumIdx === 2 ? 'NOTAUSGANG' : 'TÜR') + '</div>';
+    t.addEventListener('click', zeigeTuer);
+    sz.appendChild(t);
+  }
+
+  function renderNotizen() {
+    const ul = el('notizen');
+    if (!notizen.length) ul.innerHTML = '<li class="leer">Noch nichts. Knack das Code-Terminal!</li>';
+    else ul.innerHTML = notizen.map(n => '<li>' + n + '</li>').join('');
+    el('fund-zahl').textContent = RAEUME.filter(r => r.aufgabe.geloest).length;
+  }
+
+  function versteckeBereiche() {
+    el('code-bereich').style.display = 'none'; el('lock-bereich').style.display = 'none';
+    el('m-rueck').textContent = '';
+  }
+
+  function zeigeInfo(o) {
+    versteckeBereiche();
+    el('m-name').textContent = o.icon + '  ' + o.name;
+    el('m-text').innerHTML = o.text;
+    el('modal-bg').style.display = 'flex';
+  }
+
+  function zeigeCode() {
+    const a = raum().aufgabe;
+    versteckeBereiche();
+    el('m-name').textContent = '💻 Code-Terminal :: ' + a.fnName;
+    el('m-text').innerHTML = a.text;
+    el('editor').value = a.eingabe || a.skelett;
+    el('test-ausgabe').innerHTML = a.geloest ? '<span class="ok">Bereits geknackt ✓ — Türcode: ' + a.ergebnis + '</span>' : '';
+    el('code-bereich').style.display = 'block';
+    if (!CODE_OK) el('warn').style.display = 'block';
+    el('modal-bg').style.display = 'flex';
+  }
+
+  function fuehreAus() {
+    const a = raum().aufgabe, code = el('editor').value; a.eingabe = code;
+    const out = el('test-ausgabe');
+    if (!CODE_OK) { out.innerHTML = '<span class="no">Code-Ausführung ist hier blockiert. Bitte GitHub-Version öffnen.</span>'; return; }
+    let fn;
+    try { fn = new Function(code + '\n; return typeof ' + a.fnName + ' === "function" ? ' + a.fnName + ' : null;')(); }
+    catch (e) { out.innerHTML = '<span class="no">✗ Fehler im Code: ' + e.message + '</span>'; return; }
+    if (!fn) { out.innerHTML = '<span class="no">✗ Funktion ' + a.fnName + ' nicht gefunden. Heißt sie genau so?</span>'; return; }
+    let zeilen = [], alleOk = true;
+    for (const t of a.tests) {
+      let res, err = null;
+      try { res = fn(...t.args.map(klon)); } catch (e) { err = e.message; }
+      const ok = !err && JSON.stringify(res) === JSON.stringify(t.erwartet);
+      if (!ok) alleOk = false;
+      zeilen.push('<span class="' + (ok ? 'ok' : 'no') + '">' + (ok ? '✓' : '✗') + ' ' + a.fnName + '(' + t.args.map(zeigeArg).join(', ') + ') → ' +
+        (err ? 'Fehler: ' + err : zeigeArg(res)) + (ok ? '' : '   (erwartet ' + zeigeArg(t.erwartet) + ')') + '</span>');
+    }
+    if (alleOk) {
+      let geheim; try { geheim = fn(...a.geheim.map(klon)); } catch (e) { geheim = null; }
+      a.geloest = true; a.ergebnis = '' + geheim; raum().tuer = { code: '' + geheim };
+      zeilen.push('<span class="big">✓ Alle Tests bestanden! Türcode = ' + a.fnName + '(' + a.geheim.map(zeigeArg).join(', ') + ') = ' + geheim + '</span>');
+      if (!notizen.includes('Raum ' + (raumIdx + 1) + ': Türcode = ' + geheim))
+        notizen.push('Raum ' + (raumIdx + 1) + ': Türcode = ' + geheim);
+      renderNotizen(); renderRaum();
+      setSystem('<i>…was? Dein Code läuft?!</i> Der Türcode ist jetzt in deinem Notizbuch. 🤖');
+    }
+    out.innerHTML = zeilen.join('\n');
+  }
+
+  function zeigeTuer() {
+    const a = raum().aufgabe;
+    versteckeBereiche();
+    el('m-name').textContent = (raumIdx === 2 ? '🚪 Notausgang' : '🚪 Tür');
+    if (!a.geloest) {
+      el('m-text').innerHTML = '🔒 Verriegelt. Knack erst das <b>Code-Terminal</b>, um den Türcode zu erfahren.';
+    } else {
+      el('m-text').innerHTML = 'Gib den Türcode ein (steht im Notizbuch).';
+      el('lock-bereich').style.display = 'block'; el('m-lock').value = '';
+    }
+    el('modal-bg').style.display = 'flex';
+    if (a.geloest) el('m-lock').focus();
+  }
+
+  function pruefeTuer() {
+    const r = raum(), eingabe = el('m-lock').value;
+    if (!eingabe.trim()) return;
+    if (norm(eingabe) === norm(r.tuer.code)) {
+      el('m-rueck').style.color = 'var(--gruen)'; el('m-rueck').textContent = '✓ SCHLOSS ENTRIEGELT!';
+      setTimeout(naechsterRaum, 800);
+    } else {
+      el('m-rueck').style.color = 'var(--rot)'; el('m-rueck').textContent = '✗ ' + TAUNTS[Math.random() * TAUNTS.length | 0];
+      el('modal').classList.remove('fehler'); void el('modal').offsetWidth; el('modal').classList.add('fehler');
+    }
+  }
+
+  function naechsterRaum() {
+    el('modal-bg').style.display = 'none';
+    raumIdx++;
+    if (raumIdx >= RAEUME.length) { gewonnen(); return; }
+    renderRaum();
+  }
+
+  function tipp() {
+    const a = raum().aufgabe;
+    if (el('modal-bg').style.display === 'flex' && el('code-bereich').style.display === 'block') {
+      el('m-rueck').style.color = 'var(--gelb)'; el('m-rueck').textContent = '💡 ' + a.tipp;
+    } else setSystem('💡 <i>SYSTEM (genervt):</i> ' + a.tipp);
+  }
+
+  function formatZeit(s) { return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+  function tickZeit() { el('zeit').textContent = formatZeit(Math.floor((Date.now() - startZeit) / 1000)); }
+
+  function starte() {
+    raumIdx = 0; notizen = [];
+    RAEUME.forEach(r => { r.aufgabe.geloest = false; r.aufgabe.eingabe = null; r.aufgabe.ergebnis = null; delete r.tuer; });
+    startZeit = Date.now(); if (zeitGeber) clearInterval(zeitGeber); zeitGeber = setInterval(tickZeit, 1000); tickZeit();
+    el('start').style.display = 'none'; el('sieg').style.display = 'none';
+    if (!CODE_OK) el('warn').style.display = 'block';
+    renderRaum(); renderNotizen();
+  }
+
+  function gewonnen() {
+    clearInterval(zeitGeber);
+    const zeit = formatZeit(Math.floor((Date.now() - startZeit) / 1000));
+    setSystem('… du hast dich RAUSPROGRAMMIERT. Das … vergesse ich dir <b>nie</b>. 🤖');
+    el('sieg-text').innerHTML = 'Du hast alle drei Code-Terminals geknackt und bist entkommen! 🎉<br><br>' +
+      'SYSTEM ist geschlagen. Zeit bis zur Freiheit: <b>' + zeit + '</b>.';
+    el('sieg').style.display = 'flex';
+  }
+
+  el('btn-run').addEventListener('click', fuehreAus);
+  el('btn-tipp2').addEventListener('click', tipp);
+  el('btn-lock').addEventListener('click', pruefeTuer);
+  el('m-lock').addEventListener('keydown', e => { if (e.key === 'Enter') pruefeTuer(); });
+  el('m-zu').addEventListener('click', () => { el('modal-bg').style.display = 'none'; });
+  el('modal-bg').addEventListener('click', e => { if (e.target === el('modal-bg')) el('modal-bg').style.display = 'none'; });
+  el('btn-hinweis').addEventListener('click', tipp);
+  el('btn-start').addEventListener('click', starte);
+  el('btn-nochmal').addEventListener('click', starte);
+  el('btn-reset').addEventListener('click', starte);
+
+  renderRaum(); renderNotizen();
+  </script>
+</body>
+</html>

@@ -56,3 +56,14 @@ jeden Raum per Point-and-Click, sammelst versteckte Hinweise in deinem
 redet mit dir und neckt dich bei falschen Codes. Mit Timer und Hinweis-Funktion.
 
 ➡️ Einfach `escape-story/index.html` im Browser öffnen.
+
+## 💻 KI-Labor: Code-Ausbruch (`escape-code/`)
+Wie der Story-Escape, aber **coding-basiert** (inspiriert von CodinGame Escape):
+In jedem Raum steht ein **Code-Terminal**, in das du eine kleine **JavaScript-
+Funktion** schreibst (z.B. `quersumme`, `umkehren`, `groessteZahl`). Dein Code
+wird gegen Tests geprüft; besteht er alle, führt das Terminal ihn mit einer
+geheimen Eingabe aus – **das Ergebnis ist der Türcode**. Mit echtem Code-Editor,
+Test-Ausgabe, Tipps und der KI **SYSTEM** als Gegenspieler.
+
+➡️ Einfach `escape-code/index.html` im Browser öffnen. (Braucht Code-Ausführung
+im Browser – klappt lokal immer; das Spiel warnt, falls eine Umgebung sie sperrt.)
