@@ -1,6 +1,14 @@
 .build/
 .swiftpm/
-*.xcodeproj
-*.xcworkspace
 DerivedData/
 .DS_Store
+
+# Das Xcode-Projekt gehört ausdrücklich dazu: Es wird von Tools/gen_xcodeproj.py
+# erzeugt, und wer das Projekt klont, soll es öffnen können, ohne vorher ein
+# Skript zu suchen. Vorher stand hier `*.xcodeproj` — die übliche Regel, die aber
+# von einem von Hand angelegten Projekt ausgeht, nicht von einem erzeugten.
+#
+# Draußen bleibt nur, was Xcode pro Benutzer hineinschreibt: geöffnete Dateien,
+# Fensterpositionen, Haltepunkte. Das gehört niemand anderem.
+xcuserdata/
+*.xcuserdatad/

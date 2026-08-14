@@ -1,0 +1,329 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A7908E9398A5CE2E76284AF5 /* F1RaceControlApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EC1FE3C1735D0D09C9E5A6F /* F1RaceControlApp.swift */; };
+		C6E5C0B5210388CEE300F1AA /* RaceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53DABA6A8565446E60E7EF49 /* RaceViewModel.swift */; };
+		783101A6B91C0C3D7483EFBB /* SeasonViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2784F9535DB6C8D139D4465 /* SeasonViewModel.swift */; };
+		DCB062F1BEE666E277298B81 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37220FE51890B8466F61FB33 /* DashboardView.swift */; };
+		7CE9647175041BBC842CAF12 /* DataViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BFDFD3BCB55FC521017D54A /* DataViews.swift */; };
+		CB4B9DB2C5D5F6FA4F640D84 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CBC384D2D6508E1E07966E0 /* HomeView.swift */; };
+		430B0BAC33B6C542326E6F3A /* QualifyingResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F8546FE21A05C0B41FC42D8 /* QualifyingResultView.swift */; };
+		BE31A04191A00F3FE88DD1AB /* RaceControlFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA5648AB0E8B0F8A6D3D10F7 /* RaceControlFeedView.swift */; };
+		AF28510BF3D3B714A41D6F34 /* RaceResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2B2E0694AFBD0135E5E33F /* RaceResultView.swift */; };
+		D3952071CED92FC2217D695E /* SeasonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDB9A0F3C68EC9666B5D9C1B /* SeasonView.swift */; };
+		C48961952CCA72F6702EA25A /* StandingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B09C45025E228547B17F5D83 /* StandingsView.swift */; };
+		21582904B20A65D7AE0685F6 /* TimingTowerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6FB1C55B9BE409F44520644 /* TimingTowerView.swift */; };
+		BE8315FF366D3579FFE14588 /* TrackMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85DBB55F73CBE9113DD098C4 /* TrackMapView.swift */; };
+		2F05B39053489C608C05F236 /* WeatherAndStrategyViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00604FCAD40513801209C3CF /* WeatherAndStrategyViews.swift */; };
+		F607690A2A65593FA9FB1E10 /* RaceEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 600B6FEF5DF6D5EB5F7C9F17 /* RaceEngine */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		F5BF48AA40CAD7891EB709FC /* F1RaceControl.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "F1RaceControl.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3EC1FE3C1735D0D09C9E5A6F /* F1RaceControlApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = F1RaceControlApp.swift; sourceTree = "<group>"; };
+		53DABA6A8565446E60E7EF49 /* RaceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceViewModel.swift; sourceTree = "<group>"; };
+		D2784F9535DB6C8D139D4465 /* SeasonViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonViewModel.swift; sourceTree = "<group>"; };
+		37220FE51890B8466F61FB33 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		0BFDFD3BCB55FC521017D54A /* DataViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataViews.swift; sourceTree = "<group>"; };
+		2CBC384D2D6508E1E07966E0 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		5F8546FE21A05C0B41FC42D8 /* QualifyingResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QualifyingResultView.swift; sourceTree = "<group>"; };
+		CA5648AB0E8B0F8A6D3D10F7 /* RaceControlFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceControlFeedView.swift; sourceTree = "<group>"; };
+		1F2B2E0694AFBD0135E5E33F /* RaceResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RaceResultView.swift; sourceTree = "<group>"; };
+		BDB9A0F3C68EC9666B5D9C1B /* SeasonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonView.swift; sourceTree = "<group>"; };
+		B09C45025E228547B17F5D83 /* StandingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StandingsView.swift; sourceTree = "<group>"; };
+		E6FB1C55B9BE409F44520644 /* TimingTowerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimingTowerView.swift; sourceTree = "<group>"; };
+		85DBB55F73CBE9113DD098C4 /* TrackMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackMapView.swift; sourceTree = "<group>"; };
+		00604FCAD40513801209C3CF /* WeatherAndStrategyViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeatherAndStrategyViews.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		424153ED3CD079DB4DB459AF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F607690A2A65593FA9FB1E10 /* RaceEngine in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		518DA81DB9B99529C0C0AEBE = {
+			isa = PBXGroup;
+			children = (
+				82CF2A43A7100F086D7FCFDD /* App */,
+				547D009064F7C3F13BEF3460 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		82CF2A43A7100F086D7FCFDD /* App */ = {
+			isa = PBXGroup;
+			children = (
+				3EC1FE3C1735D0D09C9E5A6F /* F1RaceControlApp.swift */,
+				53DABA6A8565446E60E7EF49 /* RaceViewModel.swift */,
+				D2784F9535DB6C8D139D4465 /* SeasonViewModel.swift */,
+				29AC9F3F890EAF73DB9E7C81 /* Views */,
+			);
+			name = App;
+			path = "../App";
+			sourceTree = "<group>";
+		};
+		29AC9F3F890EAF73DB9E7C81 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				37220FE51890B8466F61FB33 /* DashboardView.swift */,
+				0BFDFD3BCB55FC521017D54A /* DataViews.swift */,
+				2CBC384D2D6508E1E07966E0 /* HomeView.swift */,
+				5F8546FE21A05C0B41FC42D8 /* QualifyingResultView.swift */,
+				CA5648AB0E8B0F8A6D3D10F7 /* RaceControlFeedView.swift */,
+				1F2B2E0694AFBD0135E5E33F /* RaceResultView.swift */,
+				BDB9A0F3C68EC9666B5D9C1B /* SeasonView.swift */,
+				B09C45025E228547B17F5D83 /* StandingsView.swift */,
+				E6FB1C55B9BE409F44520644 /* TimingTowerView.swift */,
+				85DBB55F73CBE9113DD098C4 /* TrackMapView.swift */,
+				00604FCAD40513801209C3CF /* WeatherAndStrategyViews.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		547D009064F7C3F13BEF3460 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F5BF48AA40CAD7891EB709FC /* F1RaceControl.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		42AEFBAE01D2DFD981F7DA7D /* F1RaceControl */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 354589B28580510B6EC24620;
+			buildPhases = (
+				7A70D71C385290AF96BF1031 /* Sources */,
+				424153ED3CD079DB4DB459AF /* Frameworks */,
+				285BB1C1430063331E9F5DD0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = F1RaceControl;
+			packageProductDependencies = (
+				600B6FEF5DF6D5EB5F7C9F17 /* RaceEngine */,
+			);
+			productName = F1RaceControl;
+			productReference = F5BF48AA40CAD7891EB709FC /* F1RaceControl.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		46F86FAA6BBF9AC94A7E4595 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1520;
+				LastUpgradeCheck = 1520;
+				TargetAttributes = {
+					42AEFBAE01D2DFD981F7DA7D = {
+						CreatedOnToolsVersion = 15.2;
+					};
+				};
+			};
+			buildConfigurationList = 1F4E3D13C2320EDA50221924;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 518DA81DB9B99529C0C0AEBE;
+			packageReferences = (
+				5236A959CE52AFE1B35B905E /* XCLocalSwiftPackageReference */,
+			);
+			productRefGroup = 547D009064F7C3F13BEF3460 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				42AEFBAE01D2DFD981F7DA7D /* F1RaceControl */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		285BB1C1430063331E9F5DD0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7A70D71C385290AF96BF1031 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A7908E9398A5CE2E76284AF5 /* F1RaceControlApp.swift in Sources */,
+				C6E5C0B5210388CEE300F1AA /* RaceViewModel.swift in Sources */,
+				783101A6B91C0C3D7483EFBB /* SeasonViewModel.swift in Sources */,
+				DCB062F1BEE666E277298B81 /* DashboardView.swift in Sources */,
+				7CE9647175041BBC842CAF12 /* DataViews.swift in Sources */,
+				CB4B9DB2C5D5F6FA4F640D84 /* HomeView.swift in Sources */,
+				430B0BAC33B6C542326E6F3A /* QualifyingResultView.swift in Sources */,
+				BE31A04191A00F3FE88DD1AB /* RaceControlFeedView.swift in Sources */,
+				AF28510BF3D3B714A41D6F34 /* RaceResultView.swift in Sources */,
+				D3952071CED92FC2217D695E /* SeasonView.swift in Sources */,
+				C48961952CCA72F6702EA25A /* StandingsView.swift in Sources */,
+				21582904B20A65D7AE0685F6 /* TimingTowerView.swift in Sources */,
+				BE8315FF366D3579FFE14588 /* TrackMapView.swift in Sources */,
+				2F05B39053489C608C05F236 /* WeatherAndStrategyViews.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		92E165A9035A603BE73D2E62 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E1D3BBA94590957B0374D6E9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		F22D2FFCC45240A8FF5EBE4A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.kmsracing.F1RaceControl;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "2";
+			};
+			name = Debug;
+		};
+		FE4F802C632EAD717BA35062 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = de.kmsracing.F1RaceControl;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TARGETED_DEVICE_FAMILY = "2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1F4E3D13C2320EDA50221924 /* Build configuration list for PBXProject */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				92E165A9035A603BE73D2E62 /* Debug */,
+				E1D3BBA94590957B0374D6E9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		354589B28580510B6EC24620 /* Build configuration list for PBXNativeTarget */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F22D2FFCC45240A8FF5EBE4A /* Debug */,
+				FE4F802C632EAD717BA35062 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		5236A959CE52AFE1B35B905E /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "..";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		600B6FEF5DF6D5EB5F7C9F17 /* RaceEngine */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RaceEngine;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 46F86FAA6BBF9AC94A7E4595 /* Project object */;
+}

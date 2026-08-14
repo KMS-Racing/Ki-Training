@@ -20,6 +20,8 @@ Datenstand: **Saison 2026** — 11 Teams, 22 Fahrer, 24 Rennen.
 |---|---|
 | `Sources/RaceEngine/` | Die gesamte Rennlogik. Reines Swift + Foundation, keine UI. |
 | `Tools/gen_circuits.py` | Erzeugt die Streckenkarten aus groben Umrissen. |
+| `Tools/gen_xcodeproj.py` | Erzeugt das Xcode-Projekt aus den Dateien in `App/`. |
+| `Xcode/` | Das fertige Xcode-Projekt — `open Xcode/F1RaceControl.xcodeproj`. |
 | `Sources/f1ctl/` | Rennen im Terminal ansehen — läuft auf macOS **und** Linux. |
 | `Sources/RaceServerCore/` | Rennleitungs-Server: WebSocket, Protokoll, Web-Dashboard. |
 | `Tests/` | 140 Tests, die beweisen, dass die Logik stimmt. |
@@ -165,7 +167,7 @@ Zwei Läufe, weil sie unterschiedliche Dinge beweisen
 | Lauf | Was er zeigt |
 |---|---|
 | **Linux** | Engine baut, 140 Tests grün, ein Rennen und drei Saisonrennen laufen wirklich durch |
-| **macOS** | Paket baut auf Apple, **die SwiftUI-App wird gegen das echte SDK gebaut und gebunden**, Tests laufen auch dort |
+| **macOS** | Paket baut auf Apple, **das Xcode-Projekt wird von echtem Xcode gebaut** — für Mac und für iPad —, Tests laufen auch dort |
 
 Der macOS-Lauf ist der wichtigere von beiden. Die App wurde auf einem Linux-Rechner
 geschrieben, wo es kein SwiftUI gibt — ohne diesen Lauf bliebe sie ungeprüft, bis
@@ -341,20 +343,44 @@ sie für ein Hilfswerkzeug ohne Oberfläche.
 
 ### Der vollständige Weg — Xcode
 
-Für ein richtiges Programm mit Symbol, für den Simulator und für **iPad**:
+Für ein richtiges Programm, für den Simulator und für **iPad**. Das Projekt liegt
+fertig im Ordner:
 
-1. **Xcode → File → New → Project → Multiplatform → App**
-   Name z.B. `F1RaceControl`, Interface **SwiftUI**.
-2. **File → Add Package Dependencies… → Add Local…** und den Ordner
-   `f1-race-control/` auswählen.
-3. Im Target unter *General → Frameworks, Libraries* die Bibliothek **RaceEngine**
-   hinzufügen.
-4. Die von Xcode erzeugte `ContentView.swift` und `…App.swift` löschen und
-   stattdessen die Dateien aus `App/` ins Projekt ziehen
-   (*Copy items if needed* muss **nicht** angehakt sein).
-5. Starten. Zielgeräte sind **Mac** und **iPad**.
+```bash
+open Xcode/F1RaceControl.xcodeproj
+```
+
+Dann ⌘R. Oben links das Ziel umschalten zwischen **My Mac** und einem **iPad**.
+Nichts anzulegen, nichts hinzuzufügen — das Paket hängt schon als lokale
+Abhängigkeit drin, `RaceEngine` ist schon eingebunden.
+
+Für das iPad fragt Xcode einmal nach einem Team (*Signing & Capabilities*); auf dem
+Mac läuft die App auch ohne, sie wird dann lokal signiert.
 
 Die App braucht macOS 14 bzw. iPadOS 17.
+
+#### Warum ein Generator dahintersteht
+
+`Xcode/F1RaceControl.xcodeproj` ist nicht in Xcode zusammengeklickt, sondern von
+`Tools/gen_xcodeproj.py` erzeugt:
+
+```bash
+python3 Tools/gen_xcodeproj.py
+```
+
+Eine `.xcodeproj` ist im Kern eine Textdatei, in der jede Quelldatei **zweimal** mit
+einer 24-stelligen Kennung steht. Wer eine neue Ansicht hinzufügt und die Datei von
+Hand pflegt, vergisst früher oder später eine Hälfte — und Xcode meldet dann nichts,
+sondern übersetzt die Datei einfach nicht mit. Der Generator liest die Liste
+stattdessen aus dem Ordner. Die Kennungen kommen aus dem Dateinamen, deshalb ändert
+sich die Datei nicht bei jedem Lauf und ein `git diff` zeigt wirklich nur das Neue.
+
+Ob Xcode das Projekt öffnen und bauen kann, sagt nur Xcode selbst — deshalb baut der
+macOS-Lauf es bei jedem Push, einmal für den Mac und einmal für den iPad-Simulator.
+
+Das Projekt liegt bewusst in `Xcode/` und nicht in `App/`: Auf dem Mac ist `App/` der
+Quellordner des SwiftPM-Ziels, und ein `.xcodeproj` mittendrin wäre für SwiftPM eine
+unbekannte Datei im Quellordner.
 
 ### Aufbau der App
 

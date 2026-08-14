@@ -76,5 +76,30 @@ jobs:
           ls -lh "$BIN/F1RaceControl"
           file "$BIN/F1RaceControl"
 
+      # Der eigentliche Grund für diesen Lauf: Das Xcode-Projekt ist erzeugt
+      # (Tools/gen_xcodeproj.py), nicht in Xcode geklickt. Ob Xcode es überhaupt
+      # öffnen und bauen kann, sagt nur Xcode selbst.
+      - name: Xcode-Projekt bauen (Mac)
+        run: |
+          xcodebuild -version
+          xcodebuild \
+            -project Xcode/F1RaceControl.xcodeproj \
+            -scheme F1RaceControl \
+            -destination 'platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      # Und dasselbe fürs iPad — das ist die zweite Zielplattform aus dem README.
+      - name: Xcode-Projekt bauen (iPad-Simulator)
+        run: |
+          xcodebuild \
+            -project Xcode/F1RaceControl.xcodeproj \
+            -scheme F1RaceControl \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd-ios" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
       - name: Tests auch auf macOS
         run: swift test
