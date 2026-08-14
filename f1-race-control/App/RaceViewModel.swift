@@ -48,7 +48,17 @@ final class RaceViewModel: ObservableObject {
         isRunning = true
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: frameInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.tick() }
+            // Der Timer feuert auf der Hauptschleife, also sind wir hier bereits auf
+            // dem MainActor — das muss man Swift nur sagen.
+            //
+            // Vorher stand hier `Task { @MainActor in self?.tick() }`. Das war gleich
+            // zweimal falsch: Es erfasst `self?` über die Nebenläufigkeitsgrenze
+            // (der Compiler auf dem Mac lehnt es ab), und es hätte dreißigmal pro
+            // Sekunde eine Aufgabe erzeugt, nur um auf den Thread zu wechseln,
+            // auf dem wir längst sind.
+            MainActor.assumeIsolated {
+                self?.tick()
+            }
         }
     }
 

@@ -10,6 +10,8 @@ Boxenstrategie entstehen aus Formeln, die im Code stehen und einzeln getestet si
 
 Datenstand: **Saison 2026** — 11 Teams, 22 Fahrer, 24 Rennen.
 
+[![CI](https://github.com/KMS-Racing/Ki-Training/actions/workflows/f1-race-control.yml/badge.svg)](https://github.com/KMS-Racing/Ki-Training/actions/workflows/f1-race-control.yml)
+
 ---
 
 ## Was drin ist
@@ -152,6 +154,28 @@ Qualifying bringen soll.
 |---|---|
 | macOS / iPadOS | `~/Library/Application Support/F1RaceControl/season.json` |
 | Linux | `~/.f1-race-control/season.json` |
+
+---
+
+## Wie das Projekt geprüft wird
+
+Zwei Läufe, weil sie unterschiedliche Dinge beweisen
+(`.github/workflows/f1-race-control.yml`):
+
+| Lauf | Was er zeigt |
+|---|---|
+| **Linux** | Engine baut, 140 Tests grün, ein Rennen und drei Saisonrennen laufen wirklich durch |
+| **macOS** | Paket baut auf Apple, **die SwiftUI-App wird gegen das echte SDK typgeprüft**, Tests laufen auch dort |
+
+Der macOS-Lauf ist der wichtigere von beiden. Die App wurde auf einem Linux-Rechner
+geschrieben, wo es kein SwiftUI gibt — ohne diesen Lauf bliebe sie ungeprüft, bis
+jemand sie von Hand in Xcode öffnet.
+
+Er hat sich sofort bezahlt gemacht: Der allererste Durchlauf fand zwei Fehler, die
+unter Linux unsichtbar waren. `SOCK_STREAM` ist auf den beiden Systemen
+unterschiedlich typisiert, und auf Darwin gibt es kein `MSG_NOSIGNAL` — ohne
+`SO_NOSIGPIPE` hätte der Server auf dem Mac den Prozess verloren, sobald der erste
+Zuschauer seinen Tab schließt.
 
 ---
 
