@@ -149,7 +149,16 @@ let session = RaceSession(
 
 // MARK: - Der Socket
 
-let listener = socket(AF_INET, Int32(SOCK_STREAM.rawValue), 0)
+// `SOCK_STREAM` ist auf den beiden Systemen unterschiedlich typisiert: unter Linux
+// ein Aufzählungstyp mit `.rawValue`, unter Darwin direkt ein `Int32`. Ohne diese
+// Unterscheidung baut der Server jeweils nur auf einer der beiden Plattformen.
+#if canImport(Glibc)
+let streamSocketType = Int32(SOCK_STREAM.rawValue)
+#else
+let streamSocketType = SOCK_STREAM
+#endif
+
+let listener = socket(AF_INET, streamSocketType, 0)
 guard listener >= 0 else {
     FileHandle.standardError.write("Socket konnte nicht angelegt werden.\n".data(using: .utf8)!)
     exit(1)
@@ -204,6 +213,15 @@ while true {
     var addressLength = socklen_t(MemoryLayout<sockaddr>.size)
     let client = accept(listener, &clientAddress, &addressLength)
     guard client >= 0 else { continue }
+
+    #if !canImport(Glibc)
+    // Unter Linux verhindert `MSG_NOSIGNAL` beim Senden, dass ein Schreiben auf eine
+    // getrennte Verbindung den Prozess per SIGPIPE abschießt. Auf Darwin gibt es das
+    // Flag nicht — dort muss die Option am Socket gesetzt werden. Ohne das würde der
+    // Server auf dem Mac sterben, sobald der erste Zuschauer seinen Tab schließt.
+    var noSigPipe: Int32 = 1
+    setsockopt(client, SOL_SOCKET, SO_NOSIGPIPE, &noSigPipe, socklen_t(MemoryLayout<Int32>.size))
+    #endif
 
     // Pro Verbindung ein Thread. Für eine Handvoll Clients ist das genau richtig
     // und deutlich einfacher zu verstehen als eine Event-Schleife.
