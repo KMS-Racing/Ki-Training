@@ -16,6 +16,10 @@ final class RaceViewModel: ObservableObject {
     /// Wie viele Rennsekunden pro echter Sekunde vergehen.
     @Published var speed: Double = 30
 
+    /// Wird einmal aufgerufen, sobald das Rennen im Ziel ist.
+    /// Die Saison trägt darüber das Ergebnis in die Meisterschaft ein.
+    var onFinish: ((RaceResult) -> Void)?
+
     private(set) var engine: RaceEngine?
     private var timer: Timer?
     private(set) var driversByID: [String: Driver] = [:]
@@ -67,8 +71,16 @@ final class RaceViewModel: ObservableObject {
         snapshot = engine.snapshot()
 
         if engine.isFinished {
-            result = engine.result()
+            let finished = engine.result()
+            result = finished
             pause()
+            if let finished = finished {
+                // Nur einmal melden — danach abhängen, sonst käme es bei jedem
+                // weiteren Tick erneut und das Rennen stünde mehrfach in der Saison.
+                let callback = onFinish
+                onFinish = nil
+                callback?(finished)
+            }
         }
     }
 

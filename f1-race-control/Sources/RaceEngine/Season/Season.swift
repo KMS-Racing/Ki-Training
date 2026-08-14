@@ -29,7 +29,7 @@ public struct RoundResult: Codable, Sendable, Identifiable {
 ///
 /// Enthält absichtlich **nur Ergebnisse**, keine berechnete Tabelle. Die Meisterschaft
 /// wird bei Bedarf aus den Ergebnissen ausgerechnet (`Championship`). Damit kann sie
-/// nie „auseinanderlaufen", und man kann sie prüfen, ohne ein Rennen zu simulieren.
+/// nie „auseinanderlaufen“, und man kann sie prüfen, ohne ein Rennen zu simulieren.
 public struct Season: Codable, Sendable {
     public var year: Int
     /// Aus diesem Seed leitet sich jedes Wochenende ab. Gleicher Seed = gleiche Saison.

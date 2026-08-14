@@ -5,11 +5,13 @@ import RaceEngine
 @main
 struct F1RaceControlApp: App {
     @StateObject private var model = RaceViewModel()
+    @StateObject private var seasonModel = SeasonViewModel()
 
     var body: some Scene {
         WindowGroup {
             HomeView()
                 .environmentObject(model)
+                .environmentObject(seasonModel)
                 .preferredColorScheme(.dark)   // Rennleitungen sind dunkel
         }
         #if os(macOS)

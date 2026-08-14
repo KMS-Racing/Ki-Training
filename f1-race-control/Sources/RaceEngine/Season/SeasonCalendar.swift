@@ -5,7 +5,7 @@ public struct SeasonRound: Codable, Hashable, Sendable, Identifiable {
     /// Der wievielte Lauf der Saison (1-basiert).
     public let round: Int
     public let circuitID: String
-    /// Wie das Rennen heißt, z.B. „Großer Preis von Japan".
+    /// Wie das Rennen heißt, z.B. „Großer Preis von Japan“.
     public let name: String
 
     public var id: Int { round }

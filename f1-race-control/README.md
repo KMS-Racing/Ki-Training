@@ -8,7 +8,7 @@ Die Rennlogik ist **selbst geschrieben**: keine fertige Race Engine, keine
 Physik-Bibliothek. Rundenzeiten, Reifenabbau, Abstände, Überholvorgänge, Unfälle und
 Boxenstrategie entstehen aus Formeln, die im Code stehen und einzeln getestet sind.
 
-Datenstand: **Saison 2026** (11 Teams, 22 Fahrer).
+Datenstand: **Saison 2026** — 11 Teams, 22 Fahrer, 24 Rennen.
 
 ---
 
@@ -17,8 +17,9 @@ Datenstand: **Saison 2026** (11 Teams, 22 Fahrer).
 | Teil | Was es macht |
 |---|---|
 | `Sources/RaceEngine/` | Die gesamte Rennlogik. Reines Swift + Foundation, keine UI. |
+| `Tools/gen_circuits.py` | Erzeugt die Streckenkarten aus groben Umrissen. |
 | `Sources/f1ctl/` | Rennen im Terminal ansehen — läuft auf macOS **und** Linux. |
-| `Tests/RaceEngineTests/` | 74 Tests, die beweisen, dass die Logik stimmt. |
+| `Tests/RaceEngineTests/` | 111 Tests, die beweisen, dass die Logik stimmt. |
 | `App/` | Die SwiftUI-App für Mac und iPad. |
 | `Documentation/` | Wie die Engine aufgebaut ist und wie gerechnet wird. |
 
@@ -77,6 +78,79 @@ Tests laufen lassen:
 ```bash
 swift test
 ```
+
+---
+
+## Season Mode — eine ganze Meisterschaft
+
+24 Rennen, jedes mit eigenem Qualifying. Der Stand wird gespeichert und übersteht
+einen Neustart.
+
+```bash
+swift run f1ctl season new --seed 2026     # Saison anlegen
+swift run f1ctl season next                # Qualifying + Rennen
+swift run f1ctl season next --watch        # …und dabei live zuschauen
+swift run f1ctl season standings           # beide Meisterschaften
+swift run f1ctl season stats VER           # Statistik eines Fahrers
+swift run f1ctl season simulate            # Rest der Saison am Stück
+swift run f1ctl season calendar            # Kalender mit Ergebnissen
+```
+
+### Qualifying
+
+Echtes Q1/Q2/Q3 mit Ausscheiden:
+
+```
+Q1   alle 22   → die langsamsten 6 raus  → Startplätze 17–22
+Q2   16 übrig  → die langsamsten 6 raus  → Startplätze 11–16
+Q3   die Top 10                          → Startplätze 1–10, Schnellster hat die Pole
+```
+
+Die Qualirunde benutzt **dieselbe** Rundenzeit-Formel wie das Rennen — nur mit leerem
+Tank, freier Strecke und frischen Reifen. Es gibt bewusst keine zweite Zeitformel,
+sonst könnten Quali- und Renntempo auseinanderlaufen. Dazu kommt Streckenevolution:
+Q3 ist schneller als Q1, weil bis dahin Gummi auf dem Asphalt liegt.
+
+```
+POS  #   FAHRER          Q1         Q2         Q3         RAUS
+  1  44  HAMILTON        1:16.700   1:16.368   1:15.904   Q3   POLE
+  2  63  RUSSELL         1:16.363   1:16.077   1:15.904   Q3
+  3   4  NORRIS          1:16.517   1:16.237   1:15.959   Q3
+  4   1  VERSTAPPEN      1:16.567   1:16.314   1:15.995   Q3
+ ...
+ 17  23  ALBON           1:17.548   —          —          Q1
+```
+
+### Meisterschaft
+
+Der Saisonstand speichert **nur die Ergebnisse**. Die Tabelle wird daraus jedes Mal
+neu ausgerechnet — so kann sie nie auseinanderlaufen, und man kann sie testen, ohne
+ein einziges Rennen zu simulieren.
+
+Gezählt wird alles, was eine Saison ausmacht: Punkte, Siege, Podien, Poles, schnellste
+Runden, Ausfälle, Boxenstopps, mittlere Platzierung und mittlere Rundenzeit.
+
+Ein kompletter Durchlauf mit Seed 2026 endete so:
+
+```
+POS  FAHRER              TEAM                        PKT  SIEGE  POD  POLE
+  1  Max Verstappen      Oracle Red Bull Racing      433     11   20     9
+  2  Lewis Hamilton      Scuderia Ferrari            338      4   12     1
+  3  George Russell      Mercedes-AMG Petronas       334      4   14     2
+  4  Lando Norris        McLaren Formula 1 Team      318      4   12     3
+
+KONSTRUKTEUR   McLaren, 578 Punkte
+```
+
+Fünf verschiedene Sieger, sieben verschiedene Polesitter — genau das, was ein
+Qualifying bringen soll.
+
+### Wo die Saison liegt
+
+| System | Ort |
+|---|---|
+| macOS / iPadOS | `~/Library/Application Support/F1RaceControl/season.json` |
+| Linux | `~/.f1-race-control/season.json` |
 
 ---
 
@@ -183,13 +257,20 @@ Die App braucht macOS 14 bzw. iPadOS 17.
 
 ```
 Home
-├── Neues Rennen      Strecke, Länge, Wetter, KI-Stärke, Seed
-├── Rennen fortsetzen → Dashboard
-├── Fahrer            alle Werte als Balken
-├── Teams
-├── Strecken          mit kleiner Streckenzeichnung
+├── SAISON
+│   ├── Kalender          24 Rennen, gefahrene mit Sieger und Pole
+│   ├── Meisterschaft     Fahrer- und Konstrukteurswertung
+│   └── Statistik         alles aus §20 in einer Tabelle
+├── EINZELRENNEN
+│   ├── Neues Rennen      Strecke, Länge, Wetter, KI-Stärke, Seed
+│   └── Rennen fortsetzen → Dashboard
+├── Fahrer · Teams · Strecken
 └── Einstellungen
 ```
+
+Ein Saison-Wochenende in der App: **Wochenende starten** → das Qualifying-Ergebnis
+erscheint mit allen drei Abschnitten → **Rennen starten** → das Dashboard läuft live →
+nach der Zielflagge landet das Ergebnis automatisch in der Meisterschaft.
 
 Das Dashboard:
 
@@ -218,10 +299,14 @@ Ehrlich gesagt, damit klar ist, wo das Projekt steht:
 - **Mehrspieler/Server** ist noch nicht gebaut. Die Engine ist aber schon darauf
   vorbereitet: Sie hat keine UI-Abhängigkeiten, liefert Zustände als Wertetypen und
   lässt sich von außen steuern (`forceTrackStatus`, `applyPenalty`, `forceWeather`).
-- **Season Mode** und die dauerhafte Statistik-Datenbank fehlen. Die Punkte pro
-  Rennen und pro Team werden aber schon berechnet (`RaceResult.constructorPoints`).
+- **Sprintrennen** gibt es nicht. Der Kalender 2026 hat sechs davon; hier wird jedes
+  Wochenende als normales Rennen gefahren.
+- **Mehrere Saisons hintereinander** (Fahrerwechsel, Entwicklung der Autos über Jahre)
+  sind nicht vorgesehen — gespeichert wird immer genau eine Saison.
 - **Die Streckenlinien sind stilisiert**, keine vermessenen Koordinaten. Sie geben die
   Form wieder, nicht den exakten Verlauf.
+- **Der Kalender** gibt den veröffentlichten Stand 2026 wieder und steht in
+  `SeasonCalendar.year2026` — umsortieren dauert eine Minute.
 - **Die Team-Stärken für 2026 sind Schätzungen.** Die Fahrerpaarungen sind der
   bekannte Stand, aber wie schnell die Autos unter dem neuen Reglement wirklich sind,
   weiß vor der Saison niemand. Alle Werte stehen in `Sources/RaceEngine/Resources/`

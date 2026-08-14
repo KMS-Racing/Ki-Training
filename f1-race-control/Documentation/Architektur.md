@@ -174,3 +174,56 @@ Grund für diese Aufteilung.
 
 Zweiter Punkt: Pro Runde wird **einmal** die Tagesform eines Fahrers gewürfelt, nicht
 in jedem Schritt. Sonst hinge die Zahl der Zufallsziehungen an der Schrittweite.
+
+## Die Saison-Schicht
+
+Sie liegt **oben auf** der Engine und ändert an ihr nichts. Die einzige Anpassung an
+der Rennlogik war, dass `RaceResult` jetzt `Codable` ist — sonst ließe sich ein
+Saisonstand nicht speichern.
+
+```
+Sources/RaceEngine/
+├── Qualifying/
+│   └── Qualifying        Q1/Q2/Q3, Ergebnis und Startaufstellung
+└── Season/
+    ├── SeasonCalendar    Die 24 Rennen 2026
+    ├── Season            Der gespeicherte Stand: Seed, Kalender, Ergebnisse
+    ├── SeasonEngine      Wochenende vorbereiten, eintragen, durchrechnen
+    ├── Championship      Tabellen und Statistik aus den Ergebnissen
+    └── SeasonStore       Speichern und Laden als JSON
+```
+
+### Warum die Tabelle nicht mitgezählt wird
+
+Naheliegend wäre, nach jedem Rennen Punkte auf einen Zähler zu addieren. Stattdessen
+speichert `Season` **nur die Ergebnisse**, und `Championship` rechnet die Tabelle bei
+jedem Aufruf neu aus.
+
+Der Grund: Ein mitlaufender Zähler kann von den Ergebnissen abweichen — durch einen
+Fehler beim Speichern, durch eine nachträglich geänderte Runde, durch einen doppelten
+Eintrag. Dann steht in der Tabelle etwas anderes als in den Rennen, und niemand weiß,
+was stimmt. Neu ausrechnen kostet praktisch nichts und kann per Definition nicht
+auseinanderlaufen. Nebenbei lässt sich die Tabelle so testen, ohne ein einziges
+Rennen zu simulieren.
+
+### Warum das Wochenende in zwei Schritten läuft
+
+```
+prepareNextWeekend()  →  Qualifying fahren, Rennen vorbereiten
+       ↓
+   (die App zeigt das Rennen live, das Terminal rechnet es durch)
+       ↓
+record(race:)         →  Ergebnis in die Saison eintragen
+```
+
+Wäre beides in einem Aufruf, könnte die App das Rennen nicht anzeigen — sie bekäme
+nur das fertige Ergebnis. So kann jede Oberfläche selbst entscheiden, ob sie zuschaut
+oder überspringt.
+
+### Zufall in der Saison
+
+Aus dem Saison-Seed wird pro Runde ein eigener Seed gemischt (`Season.seed(forRound:)`).
+Dadurch ist die ganze Saison reproduzierbar, aber jedes Rennen läuft anders ab. Das
+Qualifying benutzt denselben Rundenseed wie das Rennen, aber einen eigenen Strom
+(`RandomStream.qualifying`) — sonst würde eine Änderung am Qualifying alle Rennen
+verschieben.

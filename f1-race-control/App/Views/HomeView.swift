@@ -5,27 +5,33 @@ import RaceEngine
 ///
 /// ```
 /// Home
-/// ├── New Race
-/// ├── Continue Race
-/// ├── Drivers
-/// ├── Teams
-/// ├── Circuits
-/// └── Settings
+/// ├── Saison ── Kalender · Meisterschaft · Statistik
+/// ├── Neues Rennen
+/// ├── Rennen fortsetzen
+/// ├── Fahrer · Teams · Strecken
+/// └── Einstellungen
 /// ```
 struct HomeView: View {
     @EnvironmentObject private var model: RaceViewModel
+    @EnvironmentObject private var seasonModel: SeasonViewModel
     @State private var data: RaceData?
     @State private var loadError: String?
     @State private var selection: Destination? = .newRace
 
     enum Destination: Hashable {
+        case season, standings, stats
         case newRace, race, drivers, teams, circuits, settings
     }
 
     var body: some View {
         NavigationSplitView {
             List(selection: $selection) {
-                Section("RENNEN") {
+                Section("SAISON") {
+                    Label("Kalender", systemImage: "calendar").tag(Destination.season)
+                    Label("Meisterschaft", systemImage: "trophy").tag(Destination.standings)
+                    Label("Statistik", systemImage: "chart.bar").tag(Destination.stats)
+                }
+                Section("EINZELRENNEN") {
                     Label("Neues Rennen", systemImage: "flag.checkered")
                         .tag(Destination.newRace)
                     Label("Rennen fortsetzen", systemImage: "play.circle")
@@ -58,6 +64,12 @@ struct HomeView: View {
                                    description: Text(error))
         } else if let data = data {
             switch selection {
+            case .season:
+                SeasonView(data: data) { selection = .race }
+            case .standings:
+                StandingsView()
+            case .stats:
+                SeasonStatsView()
             case .newRace, .none:
                 NewRaceView(data: data) { selection = .race }
             case .race:
@@ -78,7 +90,9 @@ struct HomeView: View {
 
     private func load() {
         do {
-            data = try DataLoader.loadAll()
+            let loaded = try DataLoader.loadAll()
+            data = loaded
+            seasonModel.load(data: loaded)
         } catch {
             loadError = "\(error)"
         }
