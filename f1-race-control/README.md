@@ -19,7 +19,8 @@ Datenstand: **Saison 2026** — 11 Teams, 22 Fahrer, 24 Rennen.
 | `Sources/RaceEngine/` | Die gesamte Rennlogik. Reines Swift + Foundation, keine UI. |
 | `Tools/gen_circuits.py` | Erzeugt die Streckenkarten aus groben Umrissen. |
 | `Sources/f1ctl/` | Rennen im Terminal ansehen — läuft auf macOS **und** Linux. |
-| `Tests/RaceEngineTests/` | 111 Tests, die beweisen, dass die Logik stimmt. |
+| `Sources/RaceServerCore/` | Rennleitungs-Server: WebSocket, Protokoll, Web-Dashboard. |
+| `Tests/` | 121 Tests, die beweisen, dass die Logik stimmt. |
 | `App/` | Die SwiftUI-App für Mac und iPad. |
 | `Documentation/` | Wie die Engine aufgebaut ist und wie gerechnet wird. |
 
@@ -151,6 +152,33 @@ Qualifying bringen soll.
 |---|---|
 | macOS / iPadOS | `~/Library/Application Support/F1RaceControl/season.json` |
 | Linux | `~/.f1-race-control/season.json` |
+
+---
+
+## Mehrspieler — der Rennleitungs-Server
+
+Ein Rennen läuft auf dem Server, beliebig viele schauen im Browser zu, und **einer**
+ist der Race Director und darf eingreifen.
+
+```bash
+swift run f1server --circuit monza --laps 30
+```
+
+```
+  http://localhost:8080/                  zuschauen
+  http://localhost:8080/?role=director    Rennleitung bedienen
+```
+
+Der Race Director kann live **VSC**, **Safety Car** und die **Rote Flagge** anordnen,
+**Strafen** verhängen, das **Wetter** umstellen sowie pausieren und das Tempo ändern —
+alles kommt sofort bei allen Zuschauern an.
+
+HTTP, WebSocket und sogar SHA-1 für den Handshake sind selbst gebaut. Das Projekt
+bleibt damit komplett abhängigkeitsfrei: `swift build` braucht kein Netz.
+Details in [`Documentation/Server.md`](Documentation/Server.md).
+
+> Der Server ist für Wohnzimmer und LAN gedacht, **nicht fürs offene Internet** —
+> wer `?role=director` an die Adresse hängt, ist Race Director.
 
 ---
 
@@ -299,6 +327,8 @@ Ehrlich gesagt, damit klar ist, wo das Projekt steht:
 - **Mehrspieler/Server** ist noch nicht gebaut. Die Engine ist aber schon darauf
   vorbereitet: Sie hat keine UI-Abhängigkeiten, liefert Zustände als Wertetypen und
   lässt sich von außen steuern (`forceTrackStatus`, `applyPenalty`, `forceWeather`).
+- **Im Mehrspieler fährt niemand selbst.** Die Clients sehen zu und die Rennleitung
+  greift ein; das Feld fährt die KI. Ein eigenes Auto zu steuern wäre der nächste Schritt.
 - **Sprintrennen** gibt es nicht. Der Kalender 2026 hat sechs davon; hier wird jedes
   Wochenende als normales Rennen gefahren.
 - **Mehrere Saisons hintereinander** (Fahrerwechsel, Entwicklung der Autos über Jahre)

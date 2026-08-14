@@ -87,17 +87,23 @@ final class RaceViewModel: ObservableObject {
     // MARK: - Rennleitung von Hand (die Race-Control-Konsole)
 
     func deployVirtualSafetyCar() {
-        engine?.forceTrackStatus(.virtualSafetyCar(phase: .deploying), clearance: 90)
+        engine?.forceTrackStatus(
+            .virtualSafetyCar(phase: .deploying), clearance: 90,
+            reason: "Virtual Safety Car deployed by the Race Director.")
         refresh()
     }
 
     func deploySafetyCar() {
-        engine?.forceTrackStatus(.safetyCar(phase: .deploying), clearance: 160)
+        engine?.forceTrackStatus(
+            .safetyCar(phase: .deploying), clearance: 160,
+            reason: "Safety Car deployed by the Race Director.")
         refresh()
     }
 
     func throwRedFlag() {
-        engine?.forceTrackStatus(.redFlag, clearance: 180)
+        engine?.forceTrackStatus(
+            .redFlag, clearance: 180,
+            reason: "Red flag shown by the Race Director.")
         refresh()
     }
 

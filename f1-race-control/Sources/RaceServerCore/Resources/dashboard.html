@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>F1 Race Control</title>
+<style>
+  :root {
+    --bg: #0d0d11; --panel: #17171d; --line: #ffffff14;
+    --text: #fff; --dim: #ffffff8c;
+    --green: #34d94f; --yellow: #ffcc1a; --red: #f2333f; --purple: #bf59f2; --cyan: #4dd9f2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.4 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  header {
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    padding: 12px 16px; border-bottom: 1px solid var(--line);
+  }
+  .brand { font-weight: 800; letter-spacing: .5px; }
+  .track { color: var(--dim); }
+  .lap { font-size: 22px; font-weight: 700; }
+  .flag {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 99px; background: var(--panel); font-weight: 700;
+  }
+  .dot { width: 11px; height: 11px; border-radius: 99px; background: var(--green); }
+  .count {
+    display: inline-grid; place-items: center; width: 26px; height: 26px;
+    border-radius: 99px; background: #ffcc1a40; font-weight: 800;
+  }
+  main { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 10px; }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .panel > h2 {
+    margin: 0; padding: 8px 12px; font-size: 11px; letter-spacing: .5px;
+    color: var(--dim); border-bottom: 1px solid var(--line);
+  }
+  .body { max-height: 62vh; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { color: var(--dim); font-size: 9px; text-align: right; padding: 6px 4px; font-weight: 700; }
+  th:nth-child(-n+3), td:nth-child(-n+3) { text-align: left; }
+  td { padding: 3px 4px; text-align: right; white-space: nowrap; }
+  tr.top td { background: #ffffff08; }
+  tr.out td { color: var(--dim); text-decoration: line-through; }
+  .bar { display: inline-block; width: 3px; height: 14px; border-radius: 2px; vertical-align: -2px; }
+  .tyre { display: inline-grid; place-items: center; width: 17px; height: 17px;
+          border: 1.4px solid; border-radius: 99px; font-size: 9.5px; font-weight: 800; }
+  .S { color: var(--red); } .M { color: var(--yellow); } .H { color: #fff; }
+  .I { color: var(--green); } .W { color: var(--cyan); }
+  .fl { color: var(--purple); }
+  .up { color: var(--green); } .down { color: var(--red); }
+  #map { width: 100%; display: block; }
+  .msg { padding: 6px 10px; border-left: 2px solid var(--dim); margin: 6px 10px; }
+  .msg b { display: block; font-size: 11px; }
+  .msg small { color: var(--dim); }
+  .msg.flagM { border-color: var(--yellow); } .msg.flagM b { color: var(--yellow); }
+  .msg.incident { border-color: var(--red); } .msg.incident b { color: var(--red); }
+  .msg.penalty { border-color: var(--purple); } .msg.penalty b { color: var(--purple); }
+  .msg.weather { border-color: var(--cyan); } .msg.weather b { color: var(--cyan); }
+  .director { padding: 10px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  button {
+    font: inherit; font-size: 12px; padding: 6px 11px; border-radius: 7px; cursor: pointer;
+    background: #ffffff14; color: var(--text); border: 1px solid var(--line);
+  }
+  button:hover { background: #ffffff24; }
+  button.danger { color: var(--red); border-color: #f2333f55; }
+  select, input { font: inherit; font-size: 12px; padding: 5px; border-radius: 6px;
+                  background: #ffffff14; color: var(--text); border: 1px solid var(--line); }
+  #weatherbar { display: flex; gap: 26px; flex-wrap: wrap; padding: 12px 16px;
+                margin: 0 10px 10px; background: var(--panel);
+                border: 1px solid var(--line); border-radius: 10px; }
+  #weatherbar div span { display: block; font-size: 9px; color: var(--dim); font-weight: 700; }
+  #notice { padding: 6px 16px; font-size: 12px; color: var(--dim); min-height: 26px; }
+  .reason { padding: 10px; background: #ffcc1a1a; font-size: 12px; line-height: 1.5; }
+  .reason b { color: var(--yellow); font-size: 10px; display: block; margin-bottom: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">F1 RACE CONTROL</div>
+    <div class="track" id="circuit">verbinde …</div>
+  </div>
+  <div class="lap" id="lap">LAP – / –</div>
+  <div class="flag"><span class="dot" id="dot"></span><span id="status">—</span><span id="countdown"></span></div>
+  <div style="flex:1"></div>
+  <div class="track" id="role">—</div>
+  <div class="track" id="viewers"></div>
+</header>
+
+<div id="notice"></div>
+
+<main>
+  <section class="panel">
+    <h2>TIMING TOWER</h2>
+    <div class="body">
+      <table>
+        <thead><tr>
+          <th>POS</th><th>#</th><th>FAHRER</th><th>GAP</th><th>INT</th><th>LAST</th><th>TYRE</th><th>PIT</th><th>±</th>
+        </tr></thead>
+        <tbody id="timing"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>TRACK MAP</h2>
+    <canvas id="map" width="640" height="480"></canvas>
+    <div id="directorPanel" style="display:none">
+      <h2 style="border-top:1px solid var(--line)">RACE DIRECTOR</h2>
+      <div class="director">
+        <button onclick="cmd({action:'vsc'})">VSC</button>
+        <button onclick="cmd({action:'safetyCar'})">Safety Car</button>
+        <button class="danger" onclick="cmd({action:'redFlag'})">Red Flag</button>
+        <button onclick="cmd({action:'resume'})">Freigeben</button>
+        <button onclick="cmd({action:'pause'})">⏸</button>
+        <button onclick="cmd({action:'play'})">▶</button>
+      </div>
+      <div class="director">
+        <select id="penaltyDriver"></select>
+        <button onclick="cmd({action:'penalty', driverID: penaltyDriver.value, seconds: 5})">5 s Strafe</button>
+        <select id="weatherPick">
+          <option value="dry">DRY</option><option value="cloudy">CLOUDY</option>
+          <option value="lightRain">LIGHT RAIN</option><option value="heavyRain">HEAVY RAIN</option>
+          <option value="drying">DRYING</option>
+        </select>
+        <button onclick="cmd({action:'weather', state: weatherPick.value})">Wetter setzen</button>
+      </div>
+      <div class="director">
+        Tempo <input id="speed" type="range" min="1" max="200" value="20"
+               oninput="speedOut.textContent=this.value+'×'"
+               onchange="cmd({action:'speed', value:+this.value})">
+        <span id="speedOut">20×</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>RACE CONTROL</h2>
+    <div id="reason"></div>
+    <div class="body" id="messages"></div>
+  </section>
+</main>
+
+<div id="weatherbar">
+  <div><span>WETTER</span><b id="wxState">—</b></div>
+  <div><span>NÄSSE</span><b id="wxWet">—</b></div>
+  <div><span>LUFT</span><b id="wxAir">—</b></div>
+  <div><span>ASPHALT</span><b id="wxTrack">—</b></div>
+  <div><span>WIND</span><b id="wxWind">—</b></div>
+  <div><span>REGENRISIKO</span><b id="wxRain">—</b></div>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+//  Hier wird nichts gerechnet. Der Server schickt fertige Zustände, diese Seite
+//  malt sie nur. Dieselbe Trennung wie zwischen RaceEngine und SwiftUI.
+// ---------------------------------------------------------------------------
+const params = new URLSearchParams(location.search);
+const role = params.get("role") === "director" ? "director" : "spectator";
+let info = null;   // Begrüßung: Strecke, Fahrer, Farben
+
+const ws = new WebSocket(
+  (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/live?role=" + role);
+
+ws.onopen = () => notice("verbunden");
+ws.onclose = () => notice("Verbindung getrennt — Seite neu laden");
+ws.onerror = () => notice("Verbindungsfehler");
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type === "welcome") onWelcome(msg);
+  else if (msg.type === "snapshot") onSnapshot(msg);
+  else if (msg.type === "notice") notice(msg.message, msg.ok);
+};
+
+function cmd(payload) { ws.send(JSON.stringify(payload)); }
+function notice(text, ok = true) {
+  const el = document.getElementById("notice");
+  el.textContent = text;
+  el.style.color = ok ? "var(--dim)" : "var(--red)";
+}
+
+function onWelcome(msg) {
+  info = msg;
+  document.getElementById("circuit").textContent =
+    msg.sessionName.toUpperCase() + " · " + msg.totalLaps + " Runden";
+  document.getElementById("role").textContent =
+    msg.role === "director" ? "RACE DIRECTOR" : "ZUSCHAUER";
+  if (msg.role === "director") {
+    document.getElementById("directorPanel").style.display = "block";
+    const pick = document.getElementById("penaltyDriver");
+    pick.innerHTML = msg.drivers
+      .map(d => `<option value="${d.id}">${d.number} ${d.lastName}</option>`).join("");
+  }
+  drawTrack();
+}
+
+const driverOf = (id) => info.drivers.find(d => d.id === id) || {};
+
+function onSnapshot(s) {
+  document.getElementById("lap").textContent = `LAP ${s.lap} / ${s.totalLaps}`;
+  document.getElementById("status").textContent = s.status;
+  document.getElementById("countdown").innerHTML =
+    s.countdown ? `<span class="count">${s.countdown}</span>` : "";
+  document.getElementById("viewers").textContent = s.viewers + " verbunden";
+
+  const colours = { green: "--green", yellow: "--yellow", vsc: "--yellow",
+                    safetyCar: "--yellow", red: "--red", finished: "--text" };
+  const colour = `var(${colours[s.statusKind] || "--green"})`;
+  document.getElementById("dot").style.background = colour;
+  document.getElementById("status").style.color = colour;
+
+  // --- Timing Tower ---
+  document.getElementById("timing").innerHTML = s.standings.map(row => {
+    const d = driverOf(row.driverID);
+    const retired = row.status === "retired";
+    const gap = retired ? "DNF"
+      : row.status === "inPitLane" ? "PIT"
+      : row.position === 1 ? "LEADER"
+      : row.lapsDown >= 1 ? `+${row.lapsDown} LAP`
+      : "+" + row.gapToLeader.toFixed(3);
+    const interval = (retired || row.position === 1 || row.lapsDown >= 1)
+      ? "—" : "+" + row.interval.toFixed(3);
+    const change = row.gridPosition - row.position;
+    const letter = row.tyres.compound[0].toUpperCase();
+    return `<tr class="${row.position <= 3 && !retired ? "top" : ""} ${retired ? "out" : ""}">
+      <td>${row.position}</td><td>${d.number ?? ""}</td>
+      <td><span class="bar" style="background:${d.color}"></span> ${d.lastName ?? row.driverID}</td>
+      <td>${gap}</td><td>${interval}</td>
+      <td class="${row.hasFastestLap ? "fl" : ""}">${lapTime(row.lastLapTime)}</td>
+      <td><span class="tyre ${letter}">${letter}</span> ${row.tyres.age}</td>
+      <td>${row.pitStops}</td>
+      <td class="${change > 0 ? "up" : change < 0 ? "down" : ""}">${
+        change > 0 ? "▲" + change : change < 0 ? "▼" + -change : "–"}</td>
+    </tr>`;
+  }).join("");
+
+  // --- Meldungen der Rennleitung ---
+  const kinds = { flag: "flagM", incident: "incident", penalty: "penalty", weather: "weather" };
+  document.getElementById("messages").innerHTML = s.messages.map(m =>
+    `<div class="msg ${kinds[m.category] || ""}">
+       <b>LAP ${m.lap} · ${m.headline}</b>
+       ${m.detail ? `<small>${m.detail}</small>` : ""}
+     </div>`).join("");
+
+  document.getElementById("reason").innerHTML =
+    (s.justification && ["vsc", "safetyCar", "red"].includes(s.statusKind))
+      ? `<div class="reason"><b>RACE DIRECTOR</b>${s.justification}</div>` : "";
+
+  // --- Wetter ---
+  const w = s.weather;
+  document.getElementById("wxState").textContent = w.state.replace(/([A-Z])/g, " $1").toUpperCase();
+  document.getElementById("wxWet").textContent = (w.trackWetness * 100).toFixed(0) + " %";
+  document.getElementById("wxAir").textContent = w.airTemperature.toFixed(0) + " °C";
+  document.getElementById("wxTrack").textContent = w.trackTemperature.toFixed(0) + " °C";
+  document.getElementById("wxWind").textContent = w.windSpeed.toFixed(0) + " km/h";
+  document.getElementById("wxRain").textContent = (w.rainProbability * 100).toFixed(0) + " %";
+
+  drawTrack(s.standings);
+}
+
+function lapTime(seconds) {
+  if (!seconds) return "—";
+  const m = Math.floor(seconds / 60);
+  return m + ":" + (seconds - m * 60).toFixed(3).padStart(6, "0");
+}
+
+// --- Streckenkarte ---
+function drawTrack(standings) {
+  if (!info) return;
+  const canvas = document.getElementById("map");
+  const ctx = canvas.getContext("2d");
+  const layout = info.circuit.layout;
+  const pad = 22;
+  const W = canvas.width - pad * 2, H = canvas.height - pad * 2;
+  const at = (p) => [pad + p.x * W, pad + p.y * H];
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.beginPath();
+  layout.forEach((p, i) => { const [x, y] = at(p); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+  ctx.closePath();
+  ctx.lineJoin = ctx.lineCap = "round";
+  ctx.strokeStyle = "#ffffff1f"; ctx.lineWidth = 18; ctx.stroke();
+  ctx.strokeStyle = "#ffffff59"; ctx.lineWidth = 2.5; ctx.stroke();
+
+  if (!standings) return;
+  // Von hinten nach vorn zeichnen, damit der Führende obenauf liegt.
+  [...standings].reverse().forEach(row => {
+    if (row.status === "retired") return;
+    const n = layout.length;
+    const t = ((row.lapProgress % 1) + 1) % 1 * n;
+    const a = layout[Math.floor(t) % n], b = layout[(Math.floor(t) + 1) % n];
+    const f = t - Math.floor(t);
+    const [x, y] = at({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
+    const d = driverOf(row.driverID);
+
+    ctx.beginPath(); ctx.arc(x, y, 9, 0, 7);
+    ctx.fillStyle = d.color || "#888"; ctx.fill();
+    ctx.strokeStyle = "#00000099"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = "#000"; ctx.font = "bold 10px ui-monospace, monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(String(d.number ?? ""), x, y);
+  });
+}
+</script>
+</body>
+</html>

@@ -62,7 +62,7 @@ Kein Browser-Projekt, sondern das bisher größte hier: eine **eigene Formel-1-
 Rennsimulation mit Rennleitung**, geschrieben in **Swift**. Die Rennlogik ist
 komplett selbst gebaut – keine fertige Engine. Rundenzeiten, Reifenabbau,
 Abstände, Überholvorgänge, Unfälle, Wetter und Boxenstrategie entstehen aus
-Formeln, die im Code stehen und einzeln getestet sind (**111 Tests**).
+Formeln, die im Code stehen und einzeln getestet sind (**121 Tests**).
 
 Mit dabei: **Timing Tower**, **Track Map**, **VSC und Safety Car** mit echtem
 Countdown, **Rote Flagge** und ein **Race Director**, der seine Entscheidungen
@@ -72,7 +72,12 @@ echtem **Qualifying (Q1/Q2/Q3)**, mit Fahrer- und Konstrukteurswertung und einem
 Saisonstand, der gespeichert wird. Gleicher Seed = exakt gleiches Rennen.
 Datenstand: **Saison 2026**.
 
-Zwei Oberflächen: eine **SwiftUI-App für Mac und iPad** und ein
+Dazu ein **Mehrspieler-Server**: Ein Rennen läuft, beliebig viele schauen im Browser
+zu, und einer ist **Race Director** und darf live VSC, Safety Car, Rote Flagge,
+Strafen und Wetter anordnen. HTTP und WebSocket sind selbst gebaut — das Projekt
+braucht keine einzige fremde Bibliothek.
+
+Drei Oberflächen: eine **SwiftUI-App für Mac und iPad**, ein **Web-Dashboard** und ein
 **Terminal-Programm**, mit dem man sofort loslegen kann:
 
 ```bash
@@ -81,6 +86,7 @@ swift run f1ctl --circuit monza --laps 20 --seed 42 --speed 200   # Einzelrennen
 swift run f1ctl season new --seed 2026                            # Meisterschaft
 swift run f1ctl season next                                       # Quali + Rennen
 swift run f1ctl season standings                                  # Tabelle
+swift run f1server --circuit monza --laps 30                      # Server
 ```
 
 ➡️ Details, Formeln und die Xcode-Anleitung stehen in

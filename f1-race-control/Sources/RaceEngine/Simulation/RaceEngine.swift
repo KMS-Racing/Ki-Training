@@ -421,7 +421,11 @@ public final class RaceEngine {
         car.status = .retired
         car.retirementReason = reason
         car.lapProgress = 0
-        events.publish(.retirement(driverID: car.driver.id, lap: car.lapsCompleted, reason: reason))
+        // Gemeldet wird die Runde, auf der das Auto **unterwegs** war, nicht die Zahl
+        // der beendeten. Sonst steht bei einem Ausfall in der ersten Runde „LAP 0“
+        // im Protokoll — die gibt es nicht.
+        let lap = min(configuration.laps, car.lapsCompleted + 1)
+        events.publish(.retirement(driverID: car.driver.id, lap: lap, reason: reason))
     }
 
     /// Den Race Director entscheiden lassen und die Anordnung umsetzen.
@@ -731,9 +735,19 @@ public final class RaceEngine {
 
     // MARK: - Manuelle Rennleitung (Multiplayer / Tests)
 
-    /// Zustand von außen setzen — dafür gibt es im Multiplayer später die Race-Control-Konsole.
-    public func forceTrackStatus(_ status: TrackStatus, clearance: Double = 60) {
+    /// Zustand von außen setzen — das benutzt die Race-Control-Konsole im Mehrspieler.
+    ///
+    /// `reason` ist wichtig: Ohne eine eigene Begründung würde die Anzeige weiter den
+    /// Text des letzten *automatischen* Vorfalls zeigen — also z.B. „Yellow flag in
+    /// sector 1“, während längst ein VSC läuft. Das hat beim ersten Servertest
+    /// prompt so ausgesehen.
+    public func forceTrackStatus(
+        _ status: TrackStatus,
+        clearance: Double = 60,
+        reason: String? = nil
+    ) {
         safetyCar.forceStatus(status, clearance: clearance)
+        directorJustification = reason ?? "\(status.displayName) — ordered by the Race Director."
     }
 
     /// Rennen nach roter Flagge fortsetzen.
