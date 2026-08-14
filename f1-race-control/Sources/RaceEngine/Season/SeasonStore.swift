@@ -22,8 +22,23 @@ public enum SeasonStore {
             return support.appendingPathComponent("F1RaceControl", isDirectory: true)
         }
         #endif
+
+        // Nur der Notnagel, falls oben nichts kam.
+        #if os(macOS) || os(Linux)
         let home = FileManager.default.homeDirectoryForCurrentUser
         return home.appendingPathComponent(".f1-race-control", isDirectory: true)
+        #else
+        // `homeDirectoryForCurrentUser` gibt es auf iOS und iPadOS **nicht** — eine App
+        // hat dort kein Heimatverzeichnis eines Benutzerkontos, sondern eine Sandbox.
+        // Deren Wurzel liefert `NSHomeDirectory()`.
+        //
+        // Der Compiler prüft auch Zweige, die nie laufen: Auf dem iPad greift immer
+        // schon der Abschnitt darüber, trotzdem hat diese eine Zeile den ganzen
+        // iPad-Bau scheitern lassen. Gefunden hat das erst `xcodebuild` in der CI.
+        return URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
+            .appendingPathComponent("Library/Application Support/F1RaceControl",
+                                    isDirectory: true)
+        #endif
     }
 
     public static func fileURL(in directory: URL? = nil) -> URL {
