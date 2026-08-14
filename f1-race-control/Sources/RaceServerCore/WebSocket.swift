@@ -34,6 +34,8 @@ public final class WebSocketConnection {
     public let socket: Int32
     /// Darf dieser Client die Rennleitung bedienen?
     public let isDirector: Bool
+    /// Welches Auto dieser Client fährt — `nil`, wenn er nur zuschaut.
+    public var claimedCar: String?
     public private(set) var isOpen = true
 
     /// Schreiben passiert aus dem Broadcast-Thread, Lesen aus dem eigenen —

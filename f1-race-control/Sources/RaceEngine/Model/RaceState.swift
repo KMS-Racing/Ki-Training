@@ -114,6 +114,12 @@ public struct DriverState: Codable, Hashable, Sendable, Identifiable {
     /// Aufaddierte Zeitstrafen in Sekunden.
     public var penaltySeconds: Double
     public var hasFastestLap: Bool
+    /// Mit welchem Tempo gerade gefahren wird.
+    public var pushLevel: PushLevel
+    /// Ladestand des Energiespeichers, 0…1.
+    public var battery: Double
+    /// Sitzt hier ein Mensch am Steuer?
+    public var isHumanControlled: Bool
 
     public init(
         driverID: String,
@@ -133,7 +139,10 @@ public struct DriverState: Codable, Hashable, Sendable, Identifiable {
         interval: Double = 0,
         lapsDown: Int = 0,
         penaltySeconds: Double = 0,
-        hasFastestLap: Bool = false
+        hasFastestLap: Bool = false,
+        pushLevel: PushLevel = .normal,
+        battery: Double = 1.0,
+        isHumanControlled: Bool = false
     ) {
         self.driverID = driverID
         self.position = position
@@ -153,6 +162,9 @@ public struct DriverState: Codable, Hashable, Sendable, Identifiable {
         self.lapsDown = lapsDown
         self.penaltySeconds = penaltySeconds
         self.hasFastestLap = hasFastestLap
+        self.pushLevel = pushLevel
+        self.battery = battery
+        self.isHumanControlled = isHumanControlled
     }
 
     /// Gesamtfortschritt im Rennen — Runden plus angefangene Runde.

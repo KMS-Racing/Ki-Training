@@ -45,19 +45,41 @@ public final class RaceSession {
 
     public func add(_ client: WebSocketConnection) {
         lock.lock()
+
+        // Wer ein Auto fahren will, bekommt es — wenn es noch frei ist.
+        var claimNote: String? = nil
+        if let wanted = client.claimedCar {
+            if engine.claimCar(driverID: wanted) {
+                claimNote = "Du fährst \(wanted)."
+            } else {
+                client.claimedCar = nil
+                claimNote = "\(wanted) ist schon vergeben oder gibt es nicht — du schaust zu."
+            }
+        }
+
         clients.append(client)
         // Ausgabe bewusst *innerhalb* der Sperre: Sonst rechnet zwar jeder Thread
         // die richtige Zahl aus, sie landen aber in beliebiger Reihenfolge auf dem
         // Bildschirm — und dann steht da "0 verbunden", gefolgt von "3 verbunden".
-        log("Client \(client.id) verbunden als \(client.isDirector ? "RACE DIRECTOR" : "Zuschauer") "
-            + "(\(clients.count) verbunden)")
+        let what = client.claimedCar.map { "FAHRER \($0)" }
+            ?? (client.isDirector ? "RACE DIRECTOR" : "Zuschauer")
+        log("Client \(client.id) verbunden als \(what) (\(clients.count) verbunden)")
         lock.unlock()
 
         send(welcomeTo: client)
+        if let note = claimNote {
+            reply(to: client, ok: client.claimedCar != nil, note)
+        }
     }
 
     public func remove(_ client: WebSocketConnection) {
         lock.lock()
+        // Auto zurück an die KI, sonst bliebe es für den Rest des Rennens führerlos
+        // stehen — niemand würde mehr Tempo oder Boxenstopps für es entscheiden.
+        if let car = client.claimedCar {
+            engine.releaseCar(driverID: car)
+            client.claimedCar = nil
+        }
         clients.removeAll { $0 === client }
         log("Client \(client.id) getrennt (\(clients.count) verbunden)")
         lock.unlock()
@@ -79,11 +101,12 @@ public final class RaceSession {
         }
 
         let welcome = WelcomeMessage(
-            role: client.isDirector ? .director : .spectator,
+            role: client.claimedCar != nil ? .driver : (client.isDirector ? .director : .spectator),
             circuit: configuration.circuit,
             drivers: infos,
             totalLaps: configuration.laps,
-            sessionName: sessionName
+            sessionName: sessionName,
+            yourCar: client.claimedCar
         )
         if let json = encode(welcome) {
             client.send(text: json)
@@ -162,7 +185,13 @@ public final class RaceSession {
             return
         }
 
-        // Zuschauer dürfen zuschauen — mehr nicht.
+        // Eingaben am eigenen Auto darf jeder Fahrer machen — auch ohne Rennleitung.
+        if command.action == "input" {
+            handleDriverInput(command, from: client)
+            return
+        }
+
+        // Alles andere ist Sache der Rennleitung.
         guard client.isDirector else {
             reply(to: client, ok: false, "Nur der Race Director darf das Rennen steuern.")
             return
@@ -242,6 +271,51 @@ public final class RaceSession {
 
         if ok { log("Race Director (Client \(client.id)): \(answer)") }
         reply(to: client, ok: ok, answer)
+    }
+
+    /// Tempo, Boxenstopp und Angriffsfreigabe für das eigene Auto.
+    private func handleDriverInput(_ command: CommandMessage, from client: WebSocketConnection) {
+        guard let car = client.claimedCar else {
+            reply(to: client, ok: false, "Du fährst kein Auto — verbinde dich mit ?role=driver&car=VER")
+            return
+        }
+
+        lock.lock()
+        var input = engine.input(for: car) ?? DriverInput()
+        var parts: [String] = []
+
+        if let raw = command.push {
+            if let level = PushLevel(rawValue: raw) {
+                input.pushLevel = level
+                parts.append(level.displayName)
+            } else {
+                lock.unlock()
+                reply(to: client, ok: false, "Unbekannte Tempostufe '\(raw)'.")
+                return
+            }
+        }
+        if let raw = command.pit {
+            if raw.isEmpty || raw == "none" {
+                input.pitRequest = nil
+                parts.append("Boxenstopp abgesagt")
+            } else if let compound = TyreCompound(rawValue: raw) {
+                input.pitRequest = compound
+                parts.append("BOX BOX — \(compound.displayName)")
+            } else {
+                lock.unlock()
+                reply(to: client, ok: false, "Unbekannte Mischung '\(raw)'.")
+                return
+            }
+        }
+        if let allow = command.allowOvertake {
+            input.allowOvertake = allow
+            parts.append(allow ? "Angriff frei" : "Position halten")
+        }
+
+        engine.setInput(input, for: car)
+        lock.unlock()
+
+        reply(to: client, ok: true, parts.isEmpty ? "Keine Änderung." : parts.joined(separator: " · "))
     }
 
     private func reply(to client: WebSocketConnection, ok: Bool, _ message: String) {

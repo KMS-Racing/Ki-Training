@@ -38,8 +38,9 @@ Optionen:
   --help             Diese Hilfe
 
 Im Browser:
-  http://localhost:<port>/                  zuschauen
-  http://localhost:<port>/?role=director    Rennleitung bedienen
+  http://localhost:<port>/                        zuschauen
+  http://localhost:<port>/?role=director          Rennleitung bedienen
+  http://localhost:<port>/?role=driver&car=VER    selbst fahren
 """
 
 // MARK: - Argumente
@@ -184,6 +185,7 @@ Pole: \(qualifying.poleSitter ?? "—")
 
   Zuschauen      http://localhost:\(port)/
   Rennleitung    http://localhost:\(port)/?role=director
+  Selbst fahren  http://localhost:\(port)/?role=driver&car=VER
 \(openDirector ? "  (--open: jeder darf die Rennleitung bedienen)" : "")
 Beenden mit Strg-C.
 
@@ -221,9 +223,13 @@ while true {
                 return send(client, base, pointer.count, 0)
             }
 
-            let wantsDirector = request.query["role"] == "director" || openDirector
+            let role = request.query["role"] ?? "spectator"
+            let wantsDirector = role == "director" || openDirector
             let connection = WebSocketConnection(
                 id: session.nextID(), socket: client, isDirector: wantsDirector)
+            if role == "driver", let car = request.query["car"], !car.isEmpty {
+                connection.claimedCar = car.uppercased()
+            }
             connection.pushBack(request.leftover)
             session.add(connection)
 

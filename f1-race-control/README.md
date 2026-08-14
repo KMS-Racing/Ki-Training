@@ -20,7 +20,7 @@ Datenstand: **Saison 2026** — 11 Teams, 22 Fahrer, 24 Rennen.
 | `Tools/gen_circuits.py` | Erzeugt die Streckenkarten aus groben Umrissen. |
 | `Sources/f1ctl/` | Rennen im Terminal ansehen — läuft auf macOS **und** Linux. |
 | `Sources/RaceServerCore/` | Rennleitungs-Server: WebSocket, Protokoll, Web-Dashboard. |
-| `Tests/` | 121 Tests, die beweisen, dass die Logik stimmt. |
+| `Tests/` | 140 Tests, die beweisen, dass die Logik stimmt. |
 | `App/` | Die SwiftUI-App für Mac und iPad. |
 | `Documentation/` | Wie die Engine aufgebaut ist und wie gerechnet wird. |
 
@@ -165,8 +165,9 @@ swift run f1server --circuit monza --laps 30
 ```
 
 ```
-  http://localhost:8080/                  zuschauen
-  http://localhost:8080/?role=director    Rennleitung bedienen
+  http://localhost:8080/                        zuschauen
+  http://localhost:8080/?role=director          Rennleitung bedienen
+  http://localhost:8080/?role=driver&car=VER    selbst fahren
 ```
 
 Der Race Director kann live **VSC**, **Safety Car** und die **Rote Flagge** anordnen,
@@ -179,6 +180,27 @@ Details in [`Documentation/Server.md`](Documentation/Server.md).
 
 > Der Server ist für Wohnzimmer und LAN gedacht, **nicht fürs offene Internet** —
 > wer `?role=director` an die Adresse hängt, ist Race Director.
+
+### Selbst fahren
+
+Die Engine rechnet Rundenzeiten, keine Physik — es gibt also **kein Lenkrad**.
+Gefahren wird das, was in der Formel 1 wirklich über das Ergebnis entscheidet:
+
+```
+              Rundenzeit   Reifen   Batterie   Risiko
+SCHONEN         +0.55 s    ×0.80     +0.22     ×0.75
+NORMAL           0.00 s    ×1.00     +0.06     ×1.00
+PUSH            −0.30 s    ×1.25     −0.12     ×1.30
+ATTACK          −0.65 s    ×1.55     −0.34     ×1.85
+```
+
+Dazu **wann du an die Box kommst und auf welchen Reifen**, und ob du **angreifen oder
+Position halten** willst. Die Batterie ist die eigentliche Bremse: ATTACK leert sie in
+wenigen Runden, SCHONEN lädt sie nach, und leer fällt sie auf NORMAL zurück. Man kann
+sich Angriff leisten — aber nicht dauerhaft.
+
+Sobald du ein Auto übernimmst, hält sich die KI-Strategie bei diesem Auto komplett
+heraus. Wer nie „BOX BOX“ drückt, fährt die ganze Distanz auf einem Satz Reifen.
 
 ---
 
@@ -327,8 +349,8 @@ Ehrlich gesagt, damit klar ist, wo das Projekt steht:
 - **Mehrspieler/Server** ist noch nicht gebaut. Die Engine ist aber schon darauf
   vorbereitet: Sie hat keine UI-Abhängigkeiten, liefert Zustände als Wertetypen und
   lässt sich von außen steuern (`forceTrackStatus`, `applyPenalty`, `forceWeather`).
-- **Im Mehrspieler fährt niemand selbst.** Die Clients sehen zu und die Rennleitung
-  greift ein; das Feld fährt die KI. Ein eigenes Auto zu steuern wäre der nächste Schritt.
+- **Kein Fahrgefühl.** Man steuert Tempo, Reifen und Strategie — nicht das Auto selbst.
+  Für echtes Fahren bräuchte die Engine ein Physikmodell statt Rundenzeiten.
 - **Sprintrennen** gibt es nicht. Der Kalender 2026 hat sechs davon; hier wird jedes
   Wochenende als normales Rennen gefahren.
 - **Mehrere Saisons hintereinander** (Fahrerwechsel, Entwicklung der Autos über Jahre)
@@ -341,9 +363,10 @@ Ehrlich gesagt, damit klar ist, wo das Projekt steht:
   bekannte Stand, aber wie schnell die Autos unter dem neuen Reglement wirklich sind,
   weiß vor der Saison niemand. Alle Werte stehen in `Sources/RaceEngine/Resources/`
   und lassen sich dort ändern.
-- **Die SwiftUI-Views sind noch nicht auf einem Mac kompiliert worden** — sie wurden
-  auf einem Linux-Rechner geschrieben, wo es kein SwiftUI gibt. Die Engine dagegen ist
-  vollständig gebaut und getestet.
+- **Die SwiftUI-Views wurden auf einem Linux-Rechner geschrieben**, wo es kein SwiftUI
+  gibt — dort ließen sie sich nicht kompilieren. Dafür gibt es jetzt
+  `.github/workflows/f1-race-control.yml`: Der Lauf auf einem **macOS-Runner** prüft die
+  App gegen das echte SDK. Beim ersten Durchlauf zeigt sich, ob noch Typfehler drin sind.
 
 ---
 

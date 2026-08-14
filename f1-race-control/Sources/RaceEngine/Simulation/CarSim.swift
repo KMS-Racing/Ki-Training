@@ -66,6 +66,20 @@ final class CarSim {
     /// Sorgt dafür, dass nicht alle in derselben Runde hereinkommen.
     var pitWindowOffset: Int = 0
 
+    // --- Mensch am Steuer ---
+
+    /// Fährt hier ein Mensch? Dann übernimmt `input` die Entscheidungen, die
+    /// sonst `PitStrategy` und das Standardtempo treffen.
+    var isHumanControlled: Bool = false
+    var input: DriverInput = .default
+    /// Ladestand des Energiespeichers, 0…1.
+    var battery: Double = 1.0
+
+    /// Die Tempostufe, die wirklich wirkt — bei leerer Batterie geht kein Angriff.
+    var effectivePush: PushLevel {
+        return BatteryModel.effective(input.pushLevel, battery: battery)
+    }
+
     init(driver: Driver, team: Team, gridPosition: Int, index: Int, startingTyres: TyreSet) {
         self.driver = driver
         self.team = team
@@ -142,7 +156,10 @@ final class CarSim {
             interval: interval,
             lapsDown: lapsDown,
             penaltySeconds: penaltySeconds,
-            hasFastestLap: hasFastestLap
+            hasFastestLap: hasFastestLap,
+            pushLevel: effectivePush,
+            battery: battery,
+            isHumanControlled: isHumanControlled
         )
     }
 }

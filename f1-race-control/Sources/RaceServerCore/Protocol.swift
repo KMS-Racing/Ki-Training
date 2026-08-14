@@ -14,6 +14,8 @@ public enum ClientRole: String, Codable {
     case spectator
     /// Darf die Rennleitung bedienen: VSC, Safety Car, Rote Flagge, Strafen, Wetter.
     case director
+    /// Fährt ein eigenes Auto: Tempo, Batterie, Boxenstopp, angreifen oder nicht.
+    case driver
 }
 
 // MARK: - Server → Client
@@ -26,9 +28,11 @@ public struct WelcomeMessage: Codable {
     public let drivers: [DriverInfo]
     public let totalLaps: Int
     public let sessionName: String
+    /// Das Auto, das dieser Client fährt — `nil` bei Zuschauern und Rennleitung.
+    public let yourCar: String?
 
     enum CodingKeys: String, CodingKey {
-        case type, role, circuit, drivers, totalLaps, sessionName
+        case type, role, circuit, drivers, totalLaps, sessionName, yourCar
     }
 }
 
@@ -93,6 +97,10 @@ public struct CommandMessage: Codable {
     public let state: String?
     /// Für das Tempo der Simulation.
     public let value: Double?
+    /// Für `input`: Tempostufe, Boxenanforderung, Angriff erlaubt.
+    public let push: String?
+    public let pit: String?
+    public let allowOvertake: Bool?
 }
 
 /// Kurzform des Streckenzustands für die Weboberfläche.

@@ -214,7 +214,10 @@ public final class RaceEngine {
 
         let input = makeInput(car)
         let deterministic = LapTimeModel.deterministicLapTime(input)
-        let withNoise = max(deterministic * 0.96, deterministic + car.lapNoise)
+        // Tempostufe des Fahrers. Bei der KI ist das immer `.normal` und damit 0 —
+        // an bestehenden Rennen ändert sich dadurch nichts.
+        let pushed = deterministic + car.effectivePush.lapTimeDelta
+        let withNoise = max(pushed * 0.96, pushed + car.lapNoise)
         return withNoise * car.bunchFactor
     }
 
@@ -279,8 +282,11 @@ public final class RaceEngine {
             driver: car.driver,
             circuit: configuration.circuit,
             weather: weather.conditions,
-            pushLevel: car.inDirtyAir ? 1.15 : 1.0
+            pushLevel: car.effectivePush.wearFactor * (car.inDirtyAir ? 1.15 : 1.0)
         )
+
+        // Energie laden oder verbrauchen — je nachdem, wie hart gefahren wurde.
+        car.battery = BatteryModel.advance(battery: car.battery, level: car.effectivePush)
 
         // Neue Tagesform für die kommende Runde.
         car.lapNoise = random.with(.lapTime, actor: car.index) { rng in
@@ -323,6 +329,15 @@ public final class RaceEngine {
     // MARK: - Boxenstopp
 
     private func considerPitStop(for car: CarSim) {
+        // Sitzt ein Mensch im Auto, entscheidet er selbst — die KI-Strategie
+        // schweigt dann komplett, sonst würde sie ihm dazwischenfunken.
+        if car.isHumanControlled {
+            guard let compound = car.input.pitRequest else { return }
+            car.input.pitRequest = nil          // Anforderung ist verbraucht
+            performPitStop(for: car, compound: compound)
+            return
+        }
+
         let decision = random.with(.pitStops, actor: car.index) { rng in
             PitStrategy.evaluate(
                 driver: car.driver,
@@ -338,7 +353,11 @@ public final class RaceEngine {
             )
         }
         guard decision.shouldPit else { return }
+        performPitStop(for: car, compound: decision.compound)
+    }
 
+    /// Den Stopp tatsächlich ausführen — für Mensch und KI derselbe Weg.
+    private func performPitStop(for car: CarSim, compound: TyreCompound) {
         let stationary = random.with(.pitStops, actor: car.index) { rng in
             PitStrategy.stationaryTime(team: car.team, random: &rng)
         }
@@ -350,14 +369,14 @@ public final class RaceEngine {
         let total = configuration.circuit.pitLaneLoss + stationary + servedPenalty
         car.status = .inPitLane
         car.pitRemaining = total
-        car.pitCompound = decision.compound
+        car.pitCompound = compound
         car.pitStops += 1
         car.lapCompromised = true
 
         events.publish(.pitStop(
             driverID: car.driver.id,
             lap: car.lapsCompleted,
-            compound: decision.compound,
+            compound: compound,
             duration: total
         ))
     }
@@ -390,7 +409,7 @@ public final class RaceEngine {
             trackStatus: safetyCar.status,
             isBattling: car.inDirtyAir,
             aiStrength: configuration.aiStrength
-        )
+        ) * car.effectivePush.riskFactor
         let erred = random.with(.incidents, actor: car.index) { rng in rng.chance(errorChance) }
         guard erred else { return }
 
@@ -570,6 +589,9 @@ public final class RaceEngine {
             guard attacker.lapsDown == defender.lapsDown else { continue }
             guard attacker.lapsCompleted == defender.lapsCompleted else { continue }
             guard attacker.interval <= OvertakeModel.attackRange else { continue }
+            // Ein Mensch kann sich entscheiden, nicht anzugreifen und stattdessen
+            // Reifen zu sparen.
+            guard attacker.input.allowOvertake else { continue }
             // Höchstens ein Angriff pro Runde.
             guard attacker.lastAttackLap != attacker.lapsCompleted else { continue }
 
@@ -772,6 +794,42 @@ public final class RaceEngine {
         car.penaltySeconds += seconds
         events.publish(.penalty(driverID: driverID, lap: currentLap, seconds: seconds, reason: reason))
         events.flush()
+    }
+
+    /// Ein Auto einem Menschen übergeben.
+    ///
+    /// - Returns: `false`, wenn es den Fahrer nicht gibt oder er schon vergeben ist.
+    @discardableResult
+    public func claimCar(driverID: String) -> Bool {
+        guard let car = cars.first(where: { $0.driver.id == driverID }) else { return false }
+        guard !car.isHumanControlled else { return false }
+        car.isHumanControlled = true
+        car.input = .default
+        return true
+    }
+
+    /// Ein Auto wieder der KI überlassen.
+    public func releaseCar(driverID: String) {
+        guard let car = cars.first(where: { $0.driver.id == driverID }) else { return }
+        car.isHumanControlled = false
+        car.input = .default
+    }
+
+    /// Eingaben eines menschlichen Fahrers übernehmen.
+    public func setInput(_ input: DriverInput, for driverID: String) {
+        guard let car = cars.first(where: { $0.driver.id == driverID }),
+              car.isHumanControlled else { return }
+        car.input = input
+    }
+
+    /// Aktuelle Eingaben eines Autos.
+    public func input(for driverID: String) -> DriverInput? {
+        return cars.first { $0.driver.id == driverID }?.input
+    }
+
+    /// Welche Autos gerade von Menschen gefahren werden.
+    public var humanControlledDrivers: [String] {
+        return cars.filter { $0.isHumanControlled }.map { $0.driver.id }
     }
 
     /// Einen Fahrer aus dem Rennen nehmen.

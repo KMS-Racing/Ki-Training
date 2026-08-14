@@ -131,7 +131,7 @@ final class ServerTests: XCTestCase {
                 DriverInfo(id: $0.id, name: $0.name, lastName: $0.lastName,
                            number: $0.number, team: $0.teamID, color: "#fff")
             },
-            totalLaps: 44, sessionName: circuit.name)
+            totalLaps: 44, sessionName: circuit.name, yourCar: nil)
 
         let encoded = try JSONEncoder().encode(welcome)
         let decoded = try JSONDecoder().decode(WelcomeMessage.self, from: encoded)
@@ -156,5 +156,64 @@ private extension RaceEngine {
             advance(step)
             elapsed += step
         }
+    }
+}
+
+/// Die Fahrer-Rolle: ein Auto übernehmen und steuern.
+final class DriverRoleTests: XCTestCase {
+
+    func testInputCommandDecodesEveryField() throws {
+        let json = #"{"action":"input","push":"attack","pit":"soft","allowOvertake":false}"#
+        let command = try JSONDecoder().decode(CommandMessage.self, from: Data(json.utf8))
+        XCTAssertEqual(command.action, "input")
+        XCTAssertEqual(command.push, "attack")
+        XCTAssertEqual(command.pit, "soft")
+        XCTAssertEqual(command.allowOvertake, false)
+    }
+
+    func testPartialInputLeavesOtherFieldsAlone() throws {
+        // Die Weboberfläche schickt immer nur das, was der Nutzer gerade angefasst hat.
+        let command = try JSONDecoder().decode(
+            CommandMessage.self, from: Data(#"{"action":"input","push":"conserve"}"#.utf8))
+        XCTAssertEqual(command.push, "conserve")
+        XCTAssertNil(command.pit)
+        XCTAssertNil(command.allowOvertake)
+    }
+
+    func testPushLevelNamesMatchTheProtocol() {
+        // Die Weboberfläche schickt genau diese Zeichenketten.
+        for raw in ["conserve", "normal", "push", "attack"] {
+            XCTAssertNotNil(PushLevel(rawValue: raw), "'\(raw)' muss die Engine kennen.")
+        }
+        for raw in ["soft", "medium", "hard", "intermediate", "wet"] {
+            XCTAssertNotNil(TyreCompound(rawValue: raw), "'\(raw)' muss die Engine kennen.")
+        }
+    }
+
+    func testWelcomeCarriesTheClaimedCar() throws {
+        let data = try DataLoader.loadAll()
+        guard let circuit = data.circuit(id: "monza") else {
+            throw XCTSkip("Monza fehlt.")
+        }
+        let welcome = WelcomeMessage(
+            role: .driver, circuit: circuit,
+            drivers: [], totalLaps: 30, sessionName: circuit.name, yourCar: "VER")
+        let decoded = try JSONDecoder().decode(
+            WelcomeMessage.self, from: JSONEncoder().encode(welcome))
+        XCTAssertEqual(decoded.role, .driver)
+        XCTAssertEqual(decoded.yourCar, "VER")
+    }
+
+    func testDashboardOffersTheDriverControls() {
+        // Wenn diese Bausteine fehlen, kann im Browser niemand fahren.
+        let html = ServerResources.dashboardHTML()
+        for needle in ["driverPanel", "setPush", "BOX BOX", "battBar", "attackToggle"] {
+            XCTAssertTrue(html.contains(needle), "Der Weboberfläche fehlt '\(needle)'.")
+        }
+        // Und die Rolle muss unverändert weitergereicht werden — sonst landet ein
+        // Fahrer stillschweigend als Zuschauer. Genau das ist einmal passiert.
+        XCTAssertTrue(html.contains("wantedCar"),
+                      "Das Wunschauto muss an den Server weitergereicht werden.")
+        XCTAssertTrue(html.contains("&car="))
     }
 }

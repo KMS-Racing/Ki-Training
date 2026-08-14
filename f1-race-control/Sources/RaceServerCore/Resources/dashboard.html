@@ -75,6 +75,17 @@
   #weatherbar div span { display: block; font-size: 9px; color: var(--dim); font-weight: 700; }
   #notice { padding: 6px 16px; font-size: 12px; color: var(--dim); min-height: 26px; }
   .reason { padding: 10px; background: #ffcc1a1a; font-size: 12px; line-height: 1.5; }
+  #driverPanel { padding: 12px; }
+  .mine { display: flex; gap: 22px; flex-wrap: wrap; align-items: baseline; margin-bottom: 12px; }
+  .mine div span { display: block; font-size: 9px; color: var(--dim); font-weight: 700; }
+  .mine div b { font-size: 19px; }
+  .pushrow { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .pushrow button { flex: 1; min-width: 84px; font-weight: 700; }
+  .pushrow button.on { background: var(--cyan); color: #000; border-color: var(--cyan); }
+  .pushrow button:disabled { opacity: .35; cursor: not-allowed; }
+  .batt { height: 9px; border-radius: 99px; background: #ffffff14; overflow: hidden; margin: 4px 0 12px; }
+  .batt i { display: block; height: 100%; background: var(--green); transition: width .2s; }
+  .batt.low i { background: var(--red); }
   .reason b { color: var(--yellow); font-size: 10px; display: block; margin-bottom: 3px; }
 </style>
 </head>
@@ -110,6 +121,40 @@
   <section class="panel">
     <h2>TRACK MAP</h2>
     <canvas id="map" width="640" height="480"></canvas>
+    <div id="driverPanel" style="display:none">
+      <h2 style="border-top:1px solid var(--line)">DEIN AUTO — <span id="myName"></span></h2>
+      <div id="driverPanel-body">
+        <div class="mine">
+          <div><span>POSITION</span><b id="myPos">—</b></div>
+          <div><span>LETZTE RUNDE</span><b id="myLast">—</b></div>
+          <div><span>ABSTAND VORN</span><b id="myInt">—</b></div>
+          <div><span>REIFEN</span><b id="myTyre">—</b></div>
+          <div><span>STOPPS</span><b id="myPit">—</b></div>
+        </div>
+
+        <span style="font-size:9px;color:var(--dim);font-weight:700">BATTERIE <i id="battPct"></i></span>
+        <div class="batt" id="battBar"><i style="width:100%"></i></div>
+
+        <div class="pushrow" id="pushRow">
+          <button data-push="conserve" onclick="setPush('conserve')">SCHONEN</button>
+          <button data-push="normal"   onclick="setPush('normal')">NORMAL</button>
+          <button data-push="push"     onclick="setPush('push')">PUSH</button>
+          <button data-push="attack"   onclick="setPush('attack')">ATTACK</button>
+        </div>
+
+        <div class="director" style="padding:0">
+          <select id="pitPick">
+            <option value="soft">Soft</option><option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option><option value="intermediate">Intermediate</option>
+            <option value="wet">Wet</option>
+          </select>
+          <button onclick="cmd({action:'input', pit: pitPick.value})">BOX BOX</button>
+          <button onclick="cmd({action:'input', pit: 'none'})">Absagen</button>
+          <button id="attackToggle" onclick="toggleOvertake()">Angriff: frei</button>
+        </div>
+      </div>
+    </div>
+
     <div id="directorPanel" style="display:none">
       <h2 style="border-top:1px solid var(--line)">RACE DIRECTOR</h2>
       <div class="director">
@@ -161,11 +206,17 @@
 //  malt sie nur. Dieselbe Trennung wie zwischen RaceEngine und SwiftUI.
 // ---------------------------------------------------------------------------
 const params = new URLSearchParams(location.search);
-const role = params.get("role") === "director" ? "director" : "spectator";
+// Rolle und Wunschauto unverändert an den Server weiterreichen. Wer hier filtert,
+// verliert `car=` — dann landet ein Fahrer stillschweigend als Zuschauer.
+const allowedRoles = ["director", "driver", "spectator"];
+const role = allowedRoles.includes(params.get("role")) ? params.get("role") : "spectator";
+const wantedCar = (params.get("car") || "").trim();
 let info = null;   // Begrüßung: Strecke, Fahrer, Farben
 
+const wsQuery = "?role=" + encodeURIComponent(role)
+  + (wantedCar ? "&car=" + encodeURIComponent(wantedCar) : "");
 const ws = new WebSocket(
-  (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/live?role=" + role);
+  (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/live" + wsQuery);
 
 ws.onopen = () => notice("verbunden");
 ws.onclose = () => notice("Verbindung getrennt — Seite neu laden");
@@ -179,6 +230,24 @@ ws.onmessage = (event) => {
 };
 
 function cmd(payload) { ws.send(JSON.stringify(payload)); }
+
+let myCar = null, myPush = "normal", overtakeAllowed = true;
+
+function setPush(level) {
+  myPush = level;
+  cmd({ action: "input", push: level });
+  markPush();
+}
+function markPush() {
+  document.querySelectorAll("#pushRow button").forEach(b =>
+    b.classList.toggle("on", b.dataset.push === myPush));
+}
+function toggleOvertake() {
+  overtakeAllowed = !overtakeAllowed;
+  cmd({ action: "input", allowOvertake: overtakeAllowed });
+  document.getElementById("attackToggle").textContent =
+    "Angriff: " + (overtakeAllowed ? "frei" : "gesperrt");
+}
 function notice(text, ok = true) {
   const el = document.getElementById("notice");
   el.textContent = text;
@@ -189,8 +258,16 @@ function onWelcome(msg) {
   info = msg;
   document.getElementById("circuit").textContent =
     msg.sessionName.toUpperCase() + " · " + msg.totalLaps + " Runden";
+  const roleLabels = { director: "RACE DIRECTOR", driver: "FAHRER", spectator: "ZUSCHAUER" };
   document.getElementById("role").textContent =
-    msg.role === "director" ? "RACE DIRECTOR" : "ZUSCHAUER";
+    (roleLabels[msg.role] || "ZUSCHAUER") + (msg.yourCar ? " · " + msg.yourCar : "");
+  myCar = msg.yourCar || null;
+  if (myCar) {
+    document.getElementById("driverPanel").style.display = "block";
+    const d = msg.drivers.find(x => x.id === myCar);
+    document.getElementById("myName").textContent = d ? `${d.number} ${d.lastName}` : myCar;
+    markPush();
+  }
   if (msg.role === "director") {
     document.getElementById("directorPanel").style.display = "block";
     const pick = document.getElementById("penaltyDriver");
@@ -228,7 +305,8 @@ function onSnapshot(s) {
       ? "—" : "+" + row.interval.toFixed(3);
     const change = row.gridPosition - row.position;
     const letter = row.tyres.compound[0].toUpperCase();
-    return `<tr class="${row.position <= 3 && !retired ? "top" : ""} ${retired ? "out" : ""}">
+    return `<tr class="${row.position <= 3 && !retired ? "top" : ""} ${retired ? "out" : ""}"
+      ${row.driverID === myCar ? 'style="outline:1px solid var(--cyan)"' : ""}>
       <td>${row.position}</td><td>${d.number ?? ""}</td>
       <td><span class="bar" style="background:${d.color}"></span> ${d.lastName ?? row.driverID}</td>
       <td>${gap}</td><td>${interval}</td>
@@ -261,7 +339,37 @@ function onSnapshot(s) {
   document.getElementById("wxWind").textContent = w.windSpeed.toFixed(0) + " km/h";
   document.getElementById("wxRain").textContent = (w.rainProbability * 100).toFixed(0) + " %";
 
+  if (myCar) updateMyCar(s);
   drawTrack(s.standings);
+}
+
+// Die eigene Box: alles, was man beim Fahren im Blick haben muss.
+function updateMyCar(s) {
+  const row = s.standings.find(r => r.driverID === myCar);
+  if (!row) return;
+
+  document.getElementById("myPos").textContent = "P" + row.position;
+  document.getElementById("myLast").textContent = lapTime(row.lastLapTime);
+  document.getElementById("myInt").textContent =
+    row.position === 1 ? "FÜHRT" : "+" + row.interval.toFixed(3);
+  document.getElementById("myTyre").textContent =
+    row.tyres.compound[0].toUpperCase() + " " + row.tyres.age;
+  document.getElementById("myPit").textContent = row.pitStops;
+
+  const pct = Math.round(row.battery * 100);
+  document.getElementById("battPct").textContent = pct + " %";
+  const bar = document.getElementById("battBar");
+  bar.classList.toggle("low", row.battery < 0.2);
+  bar.firstElementChild.style.width = pct + "%";
+
+  // Ohne Strom greifen PUSH und ATTACK nicht — dann auch nicht anbieten.
+  const empty = row.battery < 0.05;
+  document.querySelectorAll("#pushRow button").forEach(b => {
+    b.disabled = empty && (b.dataset.push === "push" || b.dataset.push === "attack");
+  });
+
+  // Der Server hat das letzte Wort: was wirklich anliegt, wird markiert.
+  if (row.pushLevel !== myPush && empty) markPush();
 }
 
 function lapTime(seconds) {
