@@ -1,0 +1,34 @@
+// swift-tools-version: 5.9
+// F1 Race Control — Rennsimulation & Rennleitung
+//
+// Bewusst auf Tools-Version 5.9 und Swift-5-Sprachmodus: die Engine soll sowohl
+// unter Linux (swift build / swift test) als auch in Xcode auf dem Mac bauen.
+import PackageDescription
+
+let package = Package(
+    name: "F1RaceControl",
+    platforms: [
+        .macOS(.v13),
+        .iOS(.v16),
+    ],
+    products: [
+        // Die Rennlogik. Kennt keine UI und hängt nur an Foundation.
+        .library(name: "RaceEngine", targets: ["RaceEngine"]),
+        // Rennen im Terminal ansehen — läuft auch dort, wo es kein SwiftUI gibt.
+        .executable(name: "f1ctl", targets: ["f1ctl"]),
+    ],
+    targets: [
+        .target(
+            name: "RaceEngine",
+            resources: [.process("Resources")]
+        ),
+        .executableTarget(
+            name: "f1ctl",
+            dependencies: ["RaceEngine"]
+        ),
+        .testTarget(
+            name: "RaceEngineTests",
+            dependencies: ["RaceEngine"]
+        ),
+    ]
+)

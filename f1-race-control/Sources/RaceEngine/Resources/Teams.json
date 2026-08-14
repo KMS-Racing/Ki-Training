@@ -1,0 +1,13 @@
+[
+ { "id": "mercedes",    "name": "Mercedes-AMG Petronas",  "colorHex": "#27F4D2", "carPerformance": 94, "reliability": 92, "pitCrewSkill": 90 },
+ { "id": "mclaren",     "name": "McLaren Formula 1 Team",  "colorHex": "#FF8000", "carPerformance": 93, "reliability": 91, "pitCrewSkill": 89 },
+ { "id": "ferrari",     "name": "Scuderia Ferrari",        "colorHex": "#E8002D", "carPerformance": 92, "reliability": 86, "pitCrewSkill": 88 },
+ { "id": "redbull",     "name": "Oracle Red Bull Racing",  "colorHex": "#3671C6", "carPerformance": 91, "reliability": 84, "pitCrewSkill": 96 },
+ { "id": "williams",    "name": "Atlassian Williams",      "colorHex": "#64C4FF", "carPerformance": 86, "reliability": 82, "pitCrewSkill": 79 },
+ { "id": "aston",       "name": "Aston Martin Aramco",     "colorHex": "#229971", "carPerformance": 85, "reliability": 85, "pitCrewSkill": 83 },
+ { "id": "racingbulls", "name": "Visa Cash App Racing Bulls", "colorHex": "#6692FF", "carPerformance": 83, "reliability": 87, "pitCrewSkill": 82 },
+ { "id": "audi",        "name": "Audi F1 Team",            "colorHex": "#4A5D5E", "carPerformance": 82, "reliability": 80, "pitCrewSkill": 76 },
+ { "id": "alpine",      "name": "BWT Alpine F1 Team",      "colorHex": "#0093CC", "carPerformance": 79, "reliability": 81, "pitCrewSkill": 78 },
+ { "id": "haas",        "name": "MoneyGram Haas F1 Team",  "colorHex": "#B6BABD", "carPerformance": 78, "reliability": 83, "pitCrewSkill": 75 },
+ { "id": "cadillac",    "name": "Cadillac Formula 1 Team", "colorHex": "#B8A06A", "carPerformance": 73, "reliability": 74, "pitCrewSkill": 70 }
+]
