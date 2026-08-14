@@ -79,6 +79,7 @@ public enum RandomStream: UInt64, CaseIterable, Sendable {
     case pitStops = 5
     case reliability = 6
     case raceControl = 7
+    case qualifying = 8
 }
 
 /// Verteilt aus einem Haupt-Seed je einen eigenen Generator pro Teilsystem **und Auto**.

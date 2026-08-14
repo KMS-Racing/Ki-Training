@@ -32,7 +32,10 @@ public struct RaceResultEntry: Codable, Hashable, Sendable, Identifiable {
 }
 
 /// Das Ergebnis eines kompletten Rennens.
-public struct RaceResult: Sendable {
+///
+/// `Codable`, damit eine Saison die gefahrenen Rennen speichern kann — ohne das
+/// ließe sich ein Meisterschaftsstand gar nicht auf die Platte schreiben.
+public struct RaceResult: Codable, Sendable {
     public let circuitName: String
     public let totalLaps: Int
     public let raceDuration: Double

@@ -32,10 +32,11 @@ struct Options {
     f1ctl — F1 Race Control im Terminal
 
     Verwendung:
-      swift run f1ctl [Optionen]
+      swift run f1ctl [Optionen]              Einzelrennen
+      swift run f1ctl season <befehl>         Meisterschaft (season --help)
 
     Optionen:
-      --circuit <id>     monza | spa | monaco | silverstone | bahrain | madrid | suzuka
+      --circuit <id>     Strecken-Kürzel, siehe --list (24 Strecken)
       --laps <n>         Rennlänge (Standard: Renndistanz der Strecke)
       --seed <n>         Zufalls-Startwert; gleicher Seed = gleiches Rennen
       --speed <n>        Rennsekunden pro echter Sekunde (Standard 120)
@@ -148,6 +149,17 @@ func pad(_ text: String, _ width: Int) -> String {
     let visible = visibleWidth(text)
     if visible >= width { return text }
     return text + String(repeating: " ", count: width - visible)
+}
+
+/// Text auf genau diese Breite bringen — zu langer Text wird gekürzt.
+///
+/// `pad` laesst zu lange Texte stehen (im Timing Tower sind Namen immer kurz genug).
+/// In den Saisontabellen stehen aber Namen wie "Visa Cash App Racing Bulls", und die
+/// wuerden alle folgenden Spalten verschieben.
+func fit(_ text: String, _ width: Int) -> String {
+    guard width > 1 else { return "" }
+    if visibleWidth(text) <= width { return pad(text, width) }
+    return String(text.prefix(width - 1)) + " "
 }
 
 /// Text auf feste Breite bringen (rechts).
@@ -313,16 +325,24 @@ func renderResult(_ result: RaceResult, drivers: [String: Driver], style: Style)
 
 // MARK: - Hauptprogramm
 
-guard let options = parseOptions(CommandLine.arguments) else {
-    exit(0)
-}
-
+// Stammdaten braucht jeder Befehl.
 let data: RaceData
 do {
     data = try DataLoader.loadAll()
 } catch {
     FileHandle.standardError.write("Stammdaten konnten nicht geladen werden: \(error)\n".data(using: .utf8)!)
     exit(1)
+}
+
+// Saison-Befehle abzweigen. Alles andere bleibt das gewohnte Einzelrennen.
+if CommandLine.arguments.count > 1, CommandLine.arguments[1] == "season" {
+    let seasonStyle = Style(enabled: !CommandLine.arguments.contains("--no-color"))
+    runSeasonCommand(CommandLine.arguments, data: data, style: seasonStyle)
+    exit(0)
+}
+
+guard let options = parseOptions(CommandLine.arguments) else {
+    exit(0)
 }
 
 guard let circuit = data.circuit(id: options.circuit) else {
@@ -354,19 +374,7 @@ print(style.dim("Gleicher Seed = gleiches Rennen.\n"))
 if options.headless {
     engine.runToCompletion()
 } else {
-    // 10 Bilder pro Sekunde; pro Bild so viel Rennzeit wie eingestellt.
-    let frameInterval = 0.1
-    let simulatedPerFrame = options.speed * frameInterval
-    print("\u{001B}[?25l", terminator: "")   // Cursor aus
-    defer { print("\u{001B}[?25h", terminator: "") }
-
-    while !engine.isFinished {
-        engine.advance(simulatedPerFrame)
-        let frame = render(engine.snapshot(), drivers: driversByID, style: style)
-        print("\u{001B}[H\u{001B}[2J" + frame, terminator: "")
-        fflush(stdout)
-        Thread.sleep(forTimeInterval: frameInterval)
-    }
+    runRaceLive(engine: engine, drivers: driversByID, style: style, speed: options.speed)
 }
 
 if options.showLog {
