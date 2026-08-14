@@ -8,8 +8,8 @@ import PackageDescription
 let package = Package(
     name: "F1RaceControl",
     platforms: [
-        .macOS(.v13),
-        .iOS(.v16),
+        .macOS(.v14),
+        .iOS(.v17),
     ],
     products: [
         // Die Rennlogik. Kennt keine UI und hängt nur an Foundation.

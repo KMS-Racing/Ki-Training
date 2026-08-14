@@ -57,6 +57,29 @@ redet mit dir und neckt dich bei falschen Codes. Mit Timer und Hinweis-Funktion.
 
 ➡️ Einfach `escape-story/index.html` im Browser öffnen.
 
+## 🏁 F1 Race Control (`f1-race-control/`)
+Kein Browser-Projekt, sondern das bisher größte hier: eine **eigene Formel-1-
+Rennsimulation mit Rennleitung**, geschrieben in **Swift**. Die Rennlogik ist
+komplett selbst gebaut – keine fertige Engine. Rundenzeiten, Reifenabbau,
+Abstände, Überholvorgänge, Unfälle, Wetter und Boxenstrategie entstehen aus
+Formeln, die im Code stehen und einzeln getestet sind (**74 Tests**).
+
+Mit dabei: **Timing Tower**, **Track Map**, **VSC und Safety Car** mit echtem
+Countdown, **Rote Flagge** und ein **Race Director**, der seine Entscheidungen
+in ganzen Sätzen begründet („Safety Car, weil die Strecke blockiert ist“).
+Gleicher Seed = exakt gleiches Rennen. Datenstand: **Saison 2026**.
+
+Zwei Oberflächen: eine **SwiftUI-App für Mac und iPad** und ein
+**Terminal-Programm**, mit dem man sofort loslegen kann:
+
+```bash
+cd f1-race-control
+swift run f1ctl --circuit monza --laps 20 --seed 42 --speed 200
+```
+
+➡️ Details, Formeln und die Xcode-Anleitung stehen in
+[`f1-race-control/README.md`](f1-race-control/README.md).
+
 ## 💻 KI-Labor: Code-Ausbruch (`escape-code/`)
 Wie der Story-Escape, aber **coding-basiert** (inspiriert von CodinGame Escape):
 In jedem Raum steht ein **Code-Terminal**, in das du eine kleine **JavaScript-

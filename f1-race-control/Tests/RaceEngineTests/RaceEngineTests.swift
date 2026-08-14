@@ -158,6 +158,25 @@ final class RaceEngineTests: XCTestCase {
         }
     }
 
+    func testPitStopsAreSpreadOverSeveralLaps() throws {
+        let engine = RaceEngine(configuration: try Fixtures.configuration(
+            circuitID: "monza", laps: 30, seed: 42, weatherVariability: 0))
+
+        var stopLaps: [Int] = []
+        engine.events.subscribe { event in
+            if case .pitStop(_, let lap, _, _) = event { stopLaps.append(lap) }
+        }
+        engine.runToCompletion()
+
+        XCTAssertGreaterThan(stopLaps.count, 15, "Im Trockenrennen stoppt fast jeder einmal.")
+        let distinctLaps = Set(stopLaps).count
+        XCTAssertGreaterThanOrEqual(distinctLaps, 5, """
+            Die Boxenstopps müssen sich über mehrere Runden verteilen — \
+            gemessen: \(distinctLaps) verschiedene Runden aus \(stopLaps.count) Stopps. \
+            Kommt das ganze Feld in derselben Runde herein, stimmt das Boxenfenster nicht.
+            """)
+    }
+
     // MARK: - Abstände und Timing
 
     func testGapsGrowDownTheOrder() throws {
@@ -313,6 +332,77 @@ final class RaceEngineTests: XCTestCase {
 
         XCTAssertTrue(engine.snapshot().trackStatus.isNeutralised, "Das VSC sollte noch laufen.")
         XCTAssertEqual(overtakesUnderVSC, 0, "Unter VSC darf nicht überholt werden.")
+    }
+
+    func testVSCHoldsTheFieldInPlace() throws {
+        // Unter VSC hält das Feld die Positionen. Die **Zeit**abstände wachsen dabei
+        // sogar — alle fahren langsamer, also dauert dieselbe Strecke länger. Genau
+        // deshalb ist ein Boxenstopp unter VSC so billig.
+        //
+        // Geprüft wird also nicht „Abstand bleibt gleich“, sondern das, was wirklich
+        // gelten muss: Alle Abstände wachsen um **denselben** Faktor, niemand holt auf
+        // oder fällt zurück, und die Reihenfolge bleibt unverändert.
+        let engine = RaceEngine(configuration: try Fixtures.configuration(laps: 40, seed: 8))
+        engine.run(seconds: 500)
+
+        func gaps() -> [String: Double] {
+            var result: [String: Double] = [:]
+            for state in engine.snapshot().standings where state.status == .running && state.lapsDown == 0 {
+                result[state.driverID] = state.gapToLeader
+            }
+            return result
+        }
+        func order() -> [String] {
+            return engine.snapshot().standings
+                .filter { $0.status == .running && $0.lapsDown == 0 }
+                .map { $0.driverID }
+        }
+
+        let before = gaps()
+        let orderBefore = order()
+        XCTAssertGreaterThan(before.count, 8)
+        XCTAssertGreaterThan(before.values.max() ?? 0, 3.0,
+                             "Vor dem VSC muss das Feld auseinandergezogen sein.")
+
+        engine.forceTrackStatus(.virtualSafetyCar(phase: .active), clearance: 600)
+        engine.run(seconds: 240)
+
+        let after = gaps()
+
+        // Für jeden Fahrer: um welchen Faktor ist sein Rückstand gewachsen?
+        var factors: [Double] = []
+        for (driverID, gapBefore) in before where gapBefore > 1.0 {
+            guard let gapAfter = after[driverID] else { continue }
+            XCTAssertGreaterThan(gapAfter, 0.001,
+                                 "\(driverID): Der Abstand darf unter VSC nicht auf null fallen.")
+            factors.append(gapAfter / gapBefore)
+        }
+
+        XCTAssertGreaterThan(factors.count, 6)
+        let smallest = factors.min() ?? 0
+        let largest = factors.max() ?? 0
+        XCTAssertGreaterThan(smallest, 1.0,
+                             "Unter VSC wachsen die Zeitabstände, weil alle langsamer fahren.")
+        XCTAssertLessThan(largest - smallest, 0.5, """
+            Alle Abstände müssen um denselben Faktor wachsen \
+            (kleinster \(smallest), größter \(largest)) — sonst hat jemand \
+            unter VSC aufgeholt, und genau das darf nicht passieren.
+            """)
+
+        XCTAssertEqual(order(), orderBefore,
+                       "Unter VSC darf sich die Reihenfolge nicht ändern.")
+    }
+
+    func testGapsAreNeverAllZero() throws {
+        let engine = RaceEngine(configuration: try Fixtures.configuration(laps: 20, seed: 3))
+        engine.run(seconds: 300)
+        engine.forceTrackStatus(.virtualSafetyCar(phase: .active), clearance: 300)
+        engine.run(seconds: 60)
+
+        let running = engine.snapshot().standings.filter { $0.status == .running && $0.position > 1 }
+        let nonZero = running.filter { $0.gapToLeader > 0.001 }
+        XCTAssertGreaterThan(nonZero.count, running.count / 2,
+                             "Unter VSC dürfen nicht plötzlich alle bei +0.000 stehen.")
     }
 
     func testNeutralisationSlowsEveryoneDown() throws {

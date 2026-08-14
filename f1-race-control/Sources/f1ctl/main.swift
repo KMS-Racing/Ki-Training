@@ -124,16 +124,37 @@ struct Style {
     func white(_ t: String) -> String { paint(t, "97") }
 }
 
+/// Wie breit der Text auf dem Bildschirm wirklich ist.
+///
+/// Farbcodes wie `\u{001B}[31m` stehen zwar im String, sind aber unsichtbar.
+/// Zählt man sie mit, werden farbige Spalten viel zu breit.
+func visibleWidth(_ text: String) -> Int {
+    var width = 0
+    var inEscape = false
+    for character in text {
+        if inEscape {
+            if character == "m" { inEscape = false }
+        } else if character == "\u{001B}" {
+            inEscape = true
+        } else {
+            width += 1
+        }
+    }
+    return width
+}
+
 /// Text auf feste Breite bringen (links).
 func pad(_ text: String, _ width: Int) -> String {
-    if text.count >= width { return String(text.prefix(width)) }
-    return text + String(repeating: " ", count: width - text.count)
+    let visible = visibleWidth(text)
+    if visible >= width { return text }
+    return text + String(repeating: " ", count: width - visible)
 }
 
 /// Text auf feste Breite bringen (rechts).
 func padLeft(_ text: String, _ width: Int) -> String {
-    if text.count >= width { return String(text.prefix(width)) }
-    return String(repeating: " ", count: width - text.count) + text
+    let visible = visibleWidth(text)
+    if visible >= width { return text }
+    return String(repeating: " ", count: width - visible) + text
 }
 
 func compoundColor(_ compound: TyreCompound, _ style: Style) -> String {
@@ -171,7 +192,7 @@ func render(_ snapshot: RaceSnapshot, drivers: [String: Driver], style: Style) -
     out += style.dim(String(repeating: "─", count: 74)) + "\n"
 
     // --- Timing Tower ---
-    out += style.dim("POS  #   DRIVER      GAP        INTERVAL   LAST      TYRE   PIT  ±") + "\n"
+    out += style.dim("POS  #   DRIVER       GAP        INTERVAL   LAST      TYRE   PIT  ±") + "\n"
     for state in snapshot.standings.prefix(24) {
         guard let driver = drivers[state.driverID] else { continue }
 
@@ -204,9 +225,9 @@ func render(_ snapshot: RaceSnapshot, drivers: [String: Driver], style: Style) -
 
         var line = padLeft("\(state.position)", 3) + "  "
         line += padLeft("\(driver.number)", 2) + "  "
-        line += pad(driver.lastName, 11)
-        line += pad(gapText, 20)          // breiter, weil Farbcodes mitzählen
-        line += pad(intervalText, 20)
+        line += pad(driver.lastName, 12)
+        line += pad(gapText, 11)
+        line += pad(intervalText, 11)
         line += pad(lastLap, 10)
         line += compoundColor(state.tyres.compound, style) + padLeft("\(state.tyres.age)", 3) + "   "
         line += padLeft("\(state.pitStops)", 3) + "  "

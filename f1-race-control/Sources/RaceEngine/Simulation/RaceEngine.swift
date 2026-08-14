@@ -78,6 +78,10 @@ public final class RaceEngine {
             // Ein Startplatz sind rund acht Meter, hier als Rundenanteil ausgedrückt.
             car.lapProgress = 0
             car.currentLapEstimate = configuration.circuit.baseLapTime
+            // Jedes Team plant seinen Stopp etwas anders.
+            car.pitWindowOffset = random.with(.pitStops, actor: index) { rng in
+                rng.int(in: 0...6)
+            }
             cars.append(car)
         }
         standings = cars
@@ -197,6 +201,17 @@ public final class RaceEngine {
     /// Die Streuung wird nur einmal pro Runde gewürfelt (`lapNoise`), der Rest jeden
     /// Schritt neu — so wirkt ein VSC sofort, ohne dass die Zufallsfolge durcheinandergerät.
     private func instantaneousLapTime(_ car: CarSim) -> Double {
+        // Unter VSC und Safety Car gilt für **alle** dasselbe Delta.
+        //
+        // Das ist der eigentliche Sinn einer Neutralisierung: Niemand darf aufholen.
+        // Würde hier weiter die individuelle Rundenzeit benutzt (nur langsamer), käme
+        // ein schnelles Auto einem langsamen trotzdem näher und könnte es sogar
+        // überholen — obwohl Überholen gesperrt ist. Die Reihenfolge muss stehen.
+        if safetyCar.status.isNeutralised {
+            let delta = configuration.circuit.baseLapTime * safetyCar.status.lapTimeMultiplier
+            return delta * car.bunchFactor
+        }
+
         let input = makeInput(car)
         let deterministic = LapTimeModel.deterministicLapTime(input)
         let withNoise = max(deterministic * 0.96, deterministic + car.lapNoise)
@@ -318,6 +333,7 @@ public final class RaceEngine {
                 lapsCompleted: car.lapsCompleted,
                 totalLaps: configuration.laps,
                 pitStopsMade: car.pitStops,
+                windowOffset: car.pitWindowOffset,
                 random: &rng
             )
         }

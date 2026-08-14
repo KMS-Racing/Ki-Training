@@ -32,6 +32,7 @@ public enum PitStrategy {
         lapsCompleted: Int,
         totalLaps: Int,
         pitStopsMade: Int,
+        windowOffset: Int,
         random: inout SeededRandom
     ) -> Decision {
         let lapsRemaining = totalLaps - lapsCompleted
@@ -109,10 +110,14 @@ public enum PitStrategy {
         // bleibt, muss rein — sonst würde die Strategie das Rennen entscheiden statt
         // des Tempos, und genau das war vorher der Fehler.
         if pitStopsMade == 0, weather.trackWetness < 0.30 {
-            let earliest = max(2, totalLaps / 3)
-            let latest = max(earliest, totalLaps - 4)
+            // `windowOffset` ist pro Auto verschieden und verschiebt das Boxenfenster
+            // um ein paar Runden. Ohne das käme das komplette Feld in derselben Runde
+            // herein — in echt staffeln die Teams ihre Stopps, auch um sich nicht
+            // gegenseitig in der Boxengasse zu blockieren.
+            let earliest = max(2, totalLaps / 3 + windowOffset)
+            let latest = max(earliest, totalLaps - 3)
             let mustPitNow = lapsCompleted >= latest
-            let goodMoment = lapsCompleted >= earliest && tyres.wear > 0.45
+            let goodMoment = lapsCompleted >= earliest && tyres.wear > 0.38
 
             if mustPitNow || goodMoment {
                 return Decision(

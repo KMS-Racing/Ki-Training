@@ -62,6 +62,9 @@ final class CarSim {
     var inDirtyAir: Bool = false
     /// In welcher Runde zuletzt ein Angriff gefahren wurde (max. einer pro Runde).
     var lastAttackLap: Int = -1
+    /// Um wie viele Runden das Boxenfenster dieses Autos verschoben ist.
+    /// Sorgt dafür, dass nicht alle in derselben Runde hereinkommen.
+    var pitWindowOffset: Int = 0
 
     init(driver: Driver, team: Team, gridPosition: Int, index: Int, startingTyres: TyreSet) {
         self.driver = driver
@@ -103,17 +106,20 @@ final class CarSim {
             return nil   // so weit ist dieses Auto noch nicht
         }
 
-        // Und wann endete sie?
-        let lapEnd: Double
+        // Liegt der Punkt in einer abgeschlossenen Runde, sind Anfang und Ende bekannt.
         if lapIndex < crossingTimes.count {
-            lapEnd = crossingTimes[lapIndex]
-        } else {
-            // Die Runde läuft noch — mit der laufenden Schätzung hochrechnen.
-            guard lapIndex == lapsCompleted, fraction <= lapProgress + 1e-9 else { return nil }
-            lapEnd = lapStart + max(currentLapEstimate, 1.0)
+            let lapEnd = crossingTimes[lapIndex]
+            return lapStart + fraction * (lapEnd - lapStart)
         }
 
-        return lapStart + fraction * (lapEnd - lapStart)
+        // Die Runde läuft noch. Hier **nicht** mit der geschätzten Rundenzeit
+        // hochrechnen: Wenn sich das Tempo mitten in der Runde ändert — genau das
+        // macht ein VSC —, käme ein Zeitpunkt heraus, der in der Zukunft liegt, und
+        // alle Abstände fielen auf null. Stattdessen wird die **tatsächlich**
+        // verstrichene Zeit dieser Runde auf den zurückgelegten Anteil verteilt.
+        guard lapIndex == lapsCompleted, fraction <= lapProgress + 1e-9 else { return nil }
+        guard lapProgress > 1e-9 else { return lapStart }
+        return lapStart + (fraction / lapProgress) * elapsedThisLap
     }
 
     /// Momentaufnahme für die Außenwelt.
