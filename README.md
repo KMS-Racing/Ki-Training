@@ -87,6 +87,7 @@ swift run f1ctl season new --seed 2026                            # Meisterschaf
 swift run f1ctl season next                                       # Quali + Rennen
 swift run f1ctl season standings                                  # Tabelle
 swift run f1server --circuit monza --laps 30                      # Server
+swift run F1RaceControl                                           # App (nur Mac)
 ```
 
 ➡️ Details, Formeln und die Xcode-Anleitung stehen in

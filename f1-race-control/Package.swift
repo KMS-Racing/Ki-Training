@@ -5,6 +5,29 @@
 // unter Linux (swift build / swift test) als auch in Xcode auf dem Mac bauen.
 import PackageDescription
 
+// Die SwiftUI-App als eigenes Ziel — damit man sie auf dem Mac mit einem einzigen
+// Befehl starten kann, ohne vorher in Xcode ein Projekt zusammenzuklicken.
+//
+// `Package.swift` ist selbst Swift und wird auf dem Rechner ausgewertet, der baut.
+// Unter Linux gibt es kein SwiftUI, also wird das Ziel dort gar nicht erst angelegt
+// und `swift build` bleibt grün. Genau deshalb steht die Abfrage hier und nicht
+// im Quelltext der App.
+#if os(macOS)
+let appProducts: [Product] = [
+    .executable(name: "F1RaceControl", targets: ["F1RaceControlApp"])
+]
+let appTargets: [Target] = [
+    .executableTarget(
+        name: "F1RaceControlApp",
+        dependencies: ["RaceEngine"],
+        path: "App"
+    )
+]
+#else
+let appProducts: [Product] = []
+let appTargets: [Target] = []
+#endif
+
 let package = Package(
     name: "F1RaceControl",
     platforms: [
@@ -19,7 +42,7 @@ let package = Package(
         .executable(name: "f1ctl", targets: ["f1ctl"]),
         // Rennleitungs-Server: ein Rennen, viele Zuschauer, ein Race Director.
         .executable(name: "f1server", targets: ["RaceServer"]),
-    ],
+    ] + appProducts,
     targets: [
         .target(
             name: "RaceEngine",
@@ -48,5 +71,5 @@ let package = Package(
             name: "RaceServerTests",
             dependencies: ["RaceServerCore", "RaceEngine"]
         ),
-    ]
+    ] + appTargets
 )

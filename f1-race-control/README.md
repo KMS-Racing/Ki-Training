@@ -23,7 +23,7 @@ Datenstand: **Saison 2026** — 11 Teams, 22 Fahrer, 24 Rennen.
 | `Sources/f1ctl/` | Rennen im Terminal ansehen — läuft auf macOS **und** Linux. |
 | `Sources/RaceServerCore/` | Rennleitungs-Server: WebSocket, Protokoll, Web-Dashboard. |
 | `Tests/` | 140 Tests, die beweisen, dass die Logik stimmt. |
-| `App/` | Die SwiftUI-App für Mac und iPad. |
+| `App/` | Die SwiftUI-App für Mac und iPad — `swift run F1RaceControl`. |
 | `Documentation/` | Wie die Engine aufgebaut ist und wie gerechnet wird. |
 
 ---
@@ -165,7 +165,7 @@ Zwei Läufe, weil sie unterschiedliche Dinge beweisen
 | Lauf | Was er zeigt |
 |---|---|
 | **Linux** | Engine baut, 140 Tests grün, ein Rennen und drei Saisonrennen laufen wirklich durch |
-| **macOS** | Paket baut auf Apple, **die SwiftUI-App wird gegen das echte SDK typgeprüft**, Tests laufen auch dort |
+| **macOS** | Paket baut auf Apple, **die SwiftUI-App wird gegen das echte SDK gebaut und gebunden**, Tests laufen auch dort |
 
 Der macOS-Lauf ist der wichtigere von beiden. Die App wurde auf einem Linux-Rechner
 geschrieben, wo es kein SwiftUI gibt — ohne diesen Lauf bliebe sie ungeprüft, bis
@@ -175,7 +175,13 @@ Er hat sich sofort bezahlt gemacht: Der allererste Durchlauf fand zwei Fehler, d
 unter Linux unsichtbar waren. `SOCK_STREAM` ist auf den beiden Systemen
 unterschiedlich typisiert, und auf Darwin gibt es kein `MSG_NOSIGNAL` — ohne
 `SO_NOSIGPIPE` hätte der Server auf dem Mac den Prozess verloren, sobald der erste
-Zuschauer seinen Tab schließt.
+Zuschauer seinen Tab schließt. Der zweite Durchlauf fand einen dritten: eine
+Nebenläufigkeitsverletzung im Timer der App, die der Compiler unter Linux nie zu
+sehen bekam.
+
+**Was auch dieser Lauf nicht beweist:** wie die App *aussieht*. Der Rechner in der
+Werkstatt hat keinen Bildschirm. Er zeigt, dass die App übersetzt, bindet und als
+Programm entsteht — ob ein Fenster gut aufgeteilt ist, sieht nur ein Mensch davor.
 
 ---
 
@@ -309,10 +315,33 @@ wirklich reproduzierbar.
 
 ---
 
-## Die App in Xcode öffnen
+## Die App auf dem Mac starten
 
-Das Projekt ist ein Swift-Paket. Die App wird einmal in Xcode angelegt und benutzt
-das Paket:
+### Der kurze Weg — ein Befehl
+
+```bash
+cd f1-race-control
+swift run F1RaceControl
+```
+
+Fertig. Kein Projekt anlegen, kein Xcode. Die App ist ein ganz normales Ziel des
+Pakets — allerdings nur auf dem Mac: `Package.swift` legt sie unter Linux gar nicht
+erst an, weil es dort kein SwiftUI gibt. Deshalb baut dasselbe Paket auf beiden
+Systemen.
+
+Zwei Dinge, die dabei anders sind als bei einer App aus dem App Store, weil ein so
+gestartetes Programm kein `.app`-Bündel ist:
+
+- Es hat **kein eigenes Symbol** im Dock, sondern das allgemeine.
+- Es wird beim Beenden des Terminals mitbeendet.
+
+Damit überhaupt ein Fenster nach vorn kommt, setzt die App beim Start ihre
+Aktivierungsrichtlinie selbst (`App/F1RaceControlApp.swift`) — ohne das hielte macOS
+sie für ein Hilfswerkzeug ohne Oberfläche.
+
+### Der vollständige Weg — Xcode
+
+Für ein richtiges Programm mit Symbol, für den Simulator und für **iPad**:
 
 1. **Xcode → File → New → Project → Multiplatform → App**
    Name z.B. `F1RaceControl`, Interface **SwiftUI**.

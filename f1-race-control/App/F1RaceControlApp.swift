@@ -1,5 +1,8 @@
 import SwiftUI
 import RaceEngine
+#if os(macOS)
+import AppKit
+#endif
 
 /// Einstiegspunkt der App.
 @main
@@ -7,12 +10,31 @@ struct F1RaceControlApp: App {
     @StateObject private var model = RaceViewModel()
     @StateObject private var seasonModel = SeasonViewModel()
 
+    init() {
+        #if os(macOS)
+        // Startet man die App mit `swift run F1RaceControl`, gibt es kein `.app`-Bündel
+        // und damit auch keine `Info.plist`. macOS hält so ein Programm für ein
+        // Hilfswerkzeug ohne Oberfläche: Das Fenster geht zwar auf, aber ohne Eintrag
+        // im Dock und ohne Menüleiste, und es kommt nicht nach vorn.
+        //
+        // Diese Zeile macht daraus eine ganz normale Anwendung. Wird die App in Xcode
+        // gebaut, steht die Richtlinie ohnehin schon auf `.regular` — dann ist der
+        // Aufruf wirkungslos und stört nicht.
+        NSApplication.shared.setActivationPolicy(.regular)
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             HomeView()
                 .environmentObject(model)
                 .environmentObject(seasonModel)
                 .preferredColorScheme(.dark)   // Rennleitungen sind dunkel
+                #if os(macOS)
+                // Nach vorn holen, sobald das Fenster wirklich steht. In `init()` wäre
+                // es zu früh — da läuft die Anwendung noch gar nicht.
+                .onAppear { NSApplication.shared.activate(ignoringOtherApps: true) }
+                #endif
         }
         #if os(macOS)
         .defaultSize(width: 1400, height: 900)

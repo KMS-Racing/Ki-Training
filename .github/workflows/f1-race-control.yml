@@ -48,12 +48,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Paket bauen
+      # Baut alles, was das Paket auf dem Mac hergibt — und das schließt seit
+      # neuestem die SwiftUI-App mit ein. Sie ist dort ein eigenes Ziel, unter
+      # Linux gibt es sie nicht (siehe Package.swift).
+      - name: Paket bauen (samt App)
         run: swift build
 
-      # Die App ist kein SwiftPM-Target — sie wird in Xcode zu einem Projekt
-      # zusammengesetzt. Für die Prüfung reicht der Typcheck gegen das echte
-      # SwiftUI-SDK; der findet genau die Fehler, die unter Linux unsichtbar sind.
+      # Der Bau oben übersetzt und bindet die App bereits. Dieser Schritt prüft
+      # ausdrücklich noch einmal nur die App-Quellen — damit im Protokoll steht,
+      # ob ein Fehler aus der Engine oder aus der Oberfläche kam.
       - name: SwiftUI-Quellen typprüfen
         run: |
           BIN=$(swift build --show-bin-path)
@@ -64,6 +67,14 @@ jobs:
             -swift-version 5 \
             -I "$BIN" -I "$BIN/Modules" \
             App/*.swift App/Views/*.swift
+
+      # Das Programm muss auch wirklich entstanden sein. Ob das Fenster gut aussieht,
+      # kann dieser Lauf nicht sagen — der Rechner hat keinen Bildschirm.
+      - name: App-Programm vorhanden
+        run: |
+          BIN=$(swift build --show-bin-path)
+          ls -lh "$BIN/F1RaceControl"
+          file "$BIN/F1RaceControl"
 
       - name: Tests auch auf macOS
         run: swift test
