@@ -62,7 +62,7 @@ Kein Browser-Projekt, sondern das bisher größte hier: eine **eigene Formel-1-
 Rennsimulation mit Rennleitung**, geschrieben in **Swift**. Die Rennlogik ist
 komplett selbst gebaut – keine fertige Engine. Rundenzeiten, Reifenabbau,
 Abstände, Überholvorgänge, Unfälle, Wetter und Boxenstrategie entstehen aus
-Formeln, die im Code stehen und einzeln getestet sind (**140 Tests**).
+Formeln, die im Code stehen und einzeln getestet sind (**142 Tests**).
 
 Mit dabei: **Timing Tower**, **Track Map**, **VSC und Safety Car** mit echtem
 Countdown, **Rote Flagge** und ein **Race Director**, der seine Entscheidungen

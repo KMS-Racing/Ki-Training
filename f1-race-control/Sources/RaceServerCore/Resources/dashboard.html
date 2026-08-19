@@ -385,8 +385,23 @@ function drawTrack(standings) {
   const ctx = canvas.getContext("2d");
   const layout = info.circuit.layout;
   const pad = 22;
-  const W = canvas.width - pad * 2, H = canvas.height - pad * 2;
-  const at = (p) => [pad + p.x * W, pad + p.y * H];
+  // BEIDE Achsen mit demselben Faktor -- sonst waere jede Strecke um das
+  // Seitenverhaeltnis der Zeichenflaeche verzerrt. Genau das war einer von drei
+  // Gruenden, warum die Karten vorher unbrauchbar aussahen.
+  //
+  // Skaliert wird nach der tatsaechlichen Ausdehnung der Linie, nicht nach dem
+  // 0..1-Quadrat, in dem sie steckt: Sonst fuellt ein langes, schmales Montreal
+  // nur ein Baendchen in der Mitte, waehrend rundherum alles leer bleibt.
+  let minX = 1, maxX = 0, minY = 1, maxY = 0;
+  for (const p of layout) {
+    if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+  }
+  const bw = Math.max(maxX - minX, 1e-6), bh = Math.max(maxY - minY, 1e-6);
+  const scale = Math.min((canvas.width - pad * 2) / bw, (canvas.height - pad * 2) / bh);
+  const ox = (canvas.width - bw * scale) / 2 - minX * scale;
+  const oy = (canvas.height - bh * scale) / 2 - minY * scale;
+  const at = (p) => [ox + p.x * scale, oy + p.y * scale];
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 

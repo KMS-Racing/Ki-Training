@@ -12,3 +12,7 @@ DerivedData/
 # Fensterpositionen, Haltepunkte. Das gehört niemand anderem.
 xcuserdata/
 *.xcuserdatad/
+
+# Python legt das beim Importieren eines Skripts an.
+__pycache__/
+*.pyc

@@ -19,12 +19,12 @@ Datenstand: **Saison 2026** — 11 Teams, 22 Fahrer, 24 Rennen.
 | Teil | Was es macht |
 |---|---|
 | `Sources/RaceEngine/` | Die gesamte Rennlogik. Reines Swift + Foundation, keine UI. |
-| `Tools/gen_circuits.py` | Erzeugt die Streckenkarten aus groben Umrissen. |
+| `Tools/gen_circuits.py` | Erzeugt die 24 Streckenkarten aus Umrissen mit Kurvenradien. |
 | `Tools/gen_xcodeproj.py` | Erzeugt das Xcode-Projekt aus den Dateien in `App/`. |
 | `Xcode/` | Das fertige Xcode-Projekt — `open Xcode/F1RaceControl.xcodeproj`. |
 | `Sources/f1ctl/` | Rennen im Terminal ansehen — läuft auf macOS **und** Linux. |
 | `Sources/RaceServerCore/` | Rennleitungs-Server: WebSocket, Protokoll, Web-Dashboard. |
-| `Tests/` | 140 Tests, die beweisen, dass die Logik stimmt. |
+| `Tests/` | 142 Tests, die beweisen, dass die Logik stimmt. |
 | `App/` | Die SwiftUI-App für Mac und iPad — `swift run F1RaceControl`. |
 | `Documentation/` | Wie die Engine aufgebaut ist und wie gerechnet wird. |
 
@@ -159,6 +159,55 @@ Qualifying bringen soll.
 
 ---
 
+## Die Streckenkarten
+
+24 Strecken, jede an ihrer Silhouette erkennbar. Erzeugt von `Tools/gen_circuits.py`
+aus von Hand gesetzten Umrissen — **stilisierte Nachbauten, keine vermessenen
+Koordinaten.**
+
+```bash
+python3 Tools/gen_circuits.py
+```
+
+### Der erste Anlauf war unbrauchbar
+
+Die erste Fassung legte einen weichen Spline durch ~22 Stützpunkte je Strecke. Im Test
+sah das gut aus: geschlossene Linie, gleichmäßige Punkte, alles grün. In der App sah
+man dann 24 abgerundete Kleckse, kaum voneinander zu unterscheiden. Monza, die Strecke
+mit der längsten Geraden der Formel 1, war eine Kartoffel.
+
+Drei Fehler, die sich multipliziert haben — und keiner davon war von einem Test zu
+erwischen, weil alle drei „gültige" Daten erzeugten:
+
+| Fehler | Wirkung | Jetzt |
+|---|---|---|
+| Ein Spline rundet **alles** ab, auch Geraden | keine Strecke hatte mehr eine Gerade | Der Linienzug bleibt gerade; nur die Ecken bekommen einen Radius — 12 für eine Haarnadel, 120 für eine Vollgaskurve |
+| Jeder Umriss war auf ein **Quadrat** gezeichnet | alle 24 hatten dieselben Proportionen | Umrisse in echten Proportionen, beide Achsen mit **demselben** Faktor skaliert |
+| Die Anzeige streckte zusätzlich auf 1,25 : 1 | jede Karte 25 % in die Breite gezogen | Gezeichnet wird nach der tatsächlichen Ausdehnung, unverzerrt und mittig |
+
+Danach ist Montreal eine lange, schmale Insel (Seitenverhältnis 5,6 : 1), Monza hoch
+und schmal (0,54 : 1), und Baku hat wieder seine zwei Kilometer Gerade.
+
+### Zwei Tests halten das fest
+
+- **Keine Strecke kreuzt sich selbst.** Das ist nicht nur Kosmetik: Die Engine setzt
+  die Autos über den Rundenfortschritt auf die Linie. Kreuzt die Linie sich, stehen
+  zwei Autos an derselben Stelle, die in Wahrheit eine halbe Runde auseinander sind —
+  wer zuschaut, sieht einen Unfall, den es nicht gibt. Silverstone hatte im ersten
+  Anlauf drei solcher Kreuzungen.
+- **Die Proportionen gehen weit auseinander.** Wären alle gleich gestreckt, stünde
+  hier überall 1.
+
+### Was fehlt
+
+Suzuka ist in Wirklichkeit eine **Acht** — die Gegengerade läuft unter einer Brücke
+hindurch, es ist die einzige Strecke im Kalender, die sich selbst kreuzt. Diese
+Nachbildung kreuzt sich nicht: Drei Versuche, den Übergang von Hand zu setzen, brachten
+jedes Mal zwei oder drei Kreuzungen statt einer. Ein verknotetes Suzuka sieht schlechter
+aus als ein sauberes ohne Brücke.
+
+---
+
 ## Wie das Projekt geprüft wird
 
 Zwei Läufe, weil sie unterschiedliche Dinge beweisen
@@ -166,7 +215,7 @@ Zwei Läufe, weil sie unterschiedliche Dinge beweisen
 
 | Lauf | Was er zeigt |
 |---|---|
-| **Linux** | Engine baut, 140 Tests grün, ein Rennen und drei Saisonrennen laufen wirklich durch |
+| **Linux** | Engine baut, 142 Tests grün, ein Rennen und drei Saisonrennen laufen wirklich durch |
 | **macOS** | Paket baut auf Apple, **das Xcode-Projekt wird von echtem Xcode gebaut** — für Mac und für iPad —, Tests laufen auch dort |
 
 Der macOS-Lauf ist der wichtigere von beiden. Die App wurde auf einem Linux-Rechner

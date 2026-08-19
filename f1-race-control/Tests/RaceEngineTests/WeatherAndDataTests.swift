@@ -178,6 +178,87 @@ final class WeatherAndDataTests: XCTestCase {
         }
     }
 
+    /// Keine Strecke darf durch sich selbst hindurchlaufen.
+    ///
+    /// Das ist nicht bloß Kosmetik. Die Engine setzt die Autos über den
+    /// Rundenfortschritt auf die Linie; kreuzt die Linie sich, stehen zwei Autos an
+    /// derselben Stelle, die auf der Strecke eine halbe Runde auseinander sind — und
+    /// wer zuschaut, sieht einen Unfall, den es nicht gibt.
+    ///
+    /// Der Test kam, nachdem Silverstone sich in der ersten Fassung dreimal selbst
+    /// geschnitten hatte. Aufgefallen ist das erst beim Hinsehen, nicht beim Rechnen.
+    func testCircuitsDoNotCrossThemselves() throws {
+        for circuit in try DataLoader.loadCircuits() {
+            let points = circuit.layout
+            let count = points.count
+            var crossings = 0
+
+            for i in 0..<count {
+                let a1 = points[i]
+                let a2 = points[(i + 1) % count]
+                // `stride` statt `(i + 2)..<count`: Beim letzten Segment wäre die
+                // untere Grenze größer als die obere, und ein Range stürzt dann ab.
+                for j in stride(from: i + 2, to: count, by: 1) {
+                    // Erstes und letztes Segment hängen zusammen — kein Schnitt.
+                    if i == 0 && j == count - 1 { continue }
+                    let b1 = points[j]
+                    let b2 = points[(j + 1) % count]
+                    if Self.segmentsCross(a1, a2, b1, b2) { crossings += 1 }
+                }
+            }
+
+            XCTAssertEqual(crossings, 0,
+                           "\(circuit.id): Die Streckenlinie kreuzt sich \(crossings)-mal.")
+        }
+    }
+
+    /// Die Strecken müssen unterschiedliche Proportionen haben.
+    ///
+    /// Vorher wurde jeder Umriss getrennt in x und y auf 0…1 gestreckt. Dadurch hatten
+    /// alle 24 dasselbe Seitenverhältnis, und die Karten waren nicht auseinanderzuhalten.
+    /// Jetzt skalieren beide Achsen mit demselben Faktor — Montreal ist eine lange,
+    /// schmale Insel, Monza ist hoch und schmal, und das sieht man auch.
+    func testCircuitsKeepTheirProportions() throws {
+        let circuits = try DataLoader.loadCircuits()
+
+        func aspect(_ id: String) throws -> Double {
+            let circuit = try XCTUnwrap(circuits.first { $0.id == id }, "\(id) fehlt.")
+            let xs = circuit.layout.map(\.x)
+            let ys = circuit.layout.map(\.y)
+            let width = xs.max()! - xs.min()!
+            let height = ys.max()! - ys.min()!
+            return width / height
+        }
+
+        XCTAssertGreaterThan(try aspect("montreal"), 3.0,
+                             "Montreal ist eine lange, schmale Insel.")
+        XCTAssertGreaterThan(try aspect("jeddah"), 3.0,
+                             "Jeddah ist sehr lang und sehr schmal.")
+        XCTAssertLessThan(try aspect("monza"), 0.8,
+                          "Monza ist höher als breit.")
+
+        // Und die Bandbreite insgesamt: Wären alle gleich gestreckt, läge hier 1.
+        let alle = try circuits.map { try aspect($0.id) }
+        XCTAssertGreaterThan(alle.max()! / alle.min()!, 5.0,
+                             "Die Strecken haben zu ähnliche Proportionen.")
+    }
+
+    /// Schneiden sich die Strecken a1→a2 und b1→b2 in ihrem Inneren?
+    ///
+    /// Berührungen genau an den Endpunkten zählen nicht — benachbarte Segmente einer
+    /// Linie teilen sich ja immer einen Punkt.
+    private static func segmentsCross(_ a1: TrackPoint, _ a2: TrackPoint,
+                                      _ b1: TrackPoint, _ b2: TrackPoint) -> Bool {
+        let d1x = a2.x - a1.x, d1y = a2.y - a1.y
+        let d2x = b2.x - b1.x, d2y = b2.y - b1.y
+        let denominator = d1x * d2y - d1y * d2x
+        guard abs(denominator) > 1e-12 else { return false }   // parallel
+
+        let t = ((b1.x - a1.x) * d2y - (b1.y - a1.y) * d2x) / denominator
+        let u = ((b1.x - a1.x) * d1y - (b1.y - a1.y) * d1x) / denominator
+        return t > 1e-9 && t < 1 - 1e-9 && u > 1e-9 && u < 1 - 1e-9
+    }
+
     func testTrackPositionIsContinuousAndClosed() throws {
         let circuit = try Fixtures.circuit("monza")
         let start = circuit.position(at: 0)
